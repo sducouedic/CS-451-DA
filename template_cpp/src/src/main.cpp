@@ -4,6 +4,11 @@
 
 #include "parser.hpp"
 #include "hello.h"
+#include "broadcast_app.hpp"
+
+//TODO remove
+#include "perfect_link.hpp" 
+
 #include <signal.h>
 
 
@@ -11,6 +16,9 @@ static void stop(int) {
   // reset signal handlers to default
   signal(SIGTERM, SIG_DFL);
   signal(SIGINT, SIG_DFL);
+
+  // set stop_flag to true
+  BroadcastApp::stop_flag = true;
 
   // immediately stop network packet processing
   std::cout << "Immediately stopping network packet processing.\n";
@@ -66,6 +74,9 @@ int main(int argc, char **argv) {
   std::cout << "Doing some initialization...\n\n";
 
   std::cout << "Broadcasting and delivering messages...\n\n";
+  
+  // TODO remove
+  PerfectLink* pf = new PerfectLink(hosts, static_cast<int>(parser.id()), BroadcastApp::stop_flag);
 
   // After a process finishes broadcasting,
   // it waits forever for the delivery of messages.
