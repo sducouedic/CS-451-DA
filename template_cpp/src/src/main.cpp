@@ -6,19 +6,19 @@
 #include "hello.h"
 #include "broadcast_app.hpp"
 
-//TODO remove
-#include "perfect_link.hpp" 
-
 #include <signal.h>
 
+static BroadcastApp *bd;
 
-static void stop(int) {
+static void stop(int)
+{
   // reset signal handlers to default
   signal(SIGTERM, SIG_DFL);
   signal(SIGINT, SIG_DFL);
 
   // set stop_flag to true
   BroadcastApp::stop_flag = true;
+  bd->log_state();
 
   // immediately stop network packet processing
   std::cout << "Immediately stopping network packet processing.\n";
@@ -30,7 +30,8 @@ static void stop(int) {
   exit(0);
 }
 
-int main(int argc, char **argv) {
+int main(int argc, char **argv)
+{
   signal(SIGTERM, stop);
   signal(SIGINT, stop);
 
@@ -53,7 +54,8 @@ int main(int argc, char **argv) {
   std::cout << "List of resolved hosts is:\n";
   std::cout << "==========================\n";
   auto hosts = parser.hosts();
-  for (auto &host : hosts) {
+  for (auto &host : hosts)
+  {
     std::cout << host.id << "\n";
     std::cout << "Human-readable IP: " << host.ipReadable() << "\n";
     std::cout << "Machine-readable IP: " << host.ip << "\n";
@@ -73,14 +75,34 @@ int main(int argc, char **argv) {
 
   std::cout << "Doing some initialization...\n\n";
 
+  std::vector<Process> processes;
+  for (auto &h : hosts)
+  {
+    Process p;
+    p.id = static_cast<int>(h.id);
+    p.ip = h.ip;
+    p.port = h.port;
+
+    processes.push_back(p);
+  }
+
+  int nb_msg, dest_id, loc_id;
+  parser.confs(nb_msg, dest_id);
+  Config confs;
+  confs.nb_msgs = nb_msg;
+  confs.dest_id = dest_id;
+  loc_id = static_cast<int>(parser.id());
+
+  bd = new BroadcastApp(confs, processes, loc_id, parser.outputPath());
+
   std::cout << "Broadcasting and delivering messages...\n\n";
-  
-  // TODO remove
-  PerfectLink* pf = new PerfectLink(hosts, static_cast<int>(parser.id()), BroadcastApp::stop_flag);
+
+  bd->start();
 
   // After a process finishes broadcasting,
   // it waits forever for the delivery of messages.
-  while (true) {
+  while (true)
+  {
     std::this_thread::sleep_for(std::chrono::hours(1));
   }
 

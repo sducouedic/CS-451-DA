@@ -10,7 +10,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 string(CONCAT CMAKE_CXX_FLAGS_COMMON_STR ""
-                        "-Wall -Wconversion -Wfloat-equal "
+                        "-Werror -Wall -Wconversion -Wfloat-equal "
                         "-Wpedantic -Wpointer-arith -Wswitch-default "
                         "-Wpacked -Wextra -Winvalid-pch "
                         "-Wmissing-field-initializers "
