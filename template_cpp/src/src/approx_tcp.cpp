@@ -32,7 +32,6 @@ void ApproxTCP::socket_polling()
     ssize_t tot_len;
     char buffer[MAXLINE];
 
-    //TEMP
     // std::cout << "begin socket polling" << std::endl;
     while (true)
     {
@@ -154,7 +153,7 @@ void ApproxTCP::socket_receive(const sockaddr_in *src, int seq_nr, const char *m
     sendto(sockfd, buffer, MAXLINE, 0, reinterpret_cast<const sockaddr *>(src), sizeof(*src));
 
     int id = upper_layer->id_from_sockaddr(src);
-    upper_layer->receive_from_network(id, seq_nr, msg);
+    upper_layer->receive(id, seq_nr, msg);
 }
 
 void ApproxTCP::handle_ack(ACK &ack)

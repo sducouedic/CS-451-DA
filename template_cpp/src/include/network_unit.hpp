@@ -14,15 +14,12 @@ struct MessageId
     int seq_nr;
 };
 
-/// The lower layer of broadcast that needs to interact with network
+/// The lowest-level layer of the broadcast application; needs to interact with the network
 class NetworkUnit : public BroadcastUnit
 {
 public:
     /// Class Constructor: setup sockaddrs using list of process
     NetworkUnit(const std::vector<Process> &processes);
-
-    /// Receive from network needs the seq_nr
-    virtual void receive_from_network(int src_id, int seq_nr, const char *msg){};
 
     /// get the sockaddr of a process id
     const sockaddr_in *sockaddr_from_id(int id);
@@ -31,8 +28,7 @@ public:
     /// returns -1 if no corresponding process
     int id_from_sockaddr(const sockaddr_in *addr);
 
-    /// get a pointer to a locally stored sockaddr, if one is the
-    /// same as the given parameter
+    /// get a pointer to a locally stored sockaddr, if one is the same as the given parameter
     const sockaddr_in *sockaddr_local(const sockaddr_in &addr);
 
 private:

@@ -31,7 +31,7 @@ public:
             for (int i = 0; i < configs.nb_msgs; ++i)
             {
                 snprintf(msg, MSG_SIZE, "%d", i + 1);
-                pf->send(configs.dest_id, msg);
+                pf->send(configs.dest_id, i + 1, msg);
             }
         }
     }

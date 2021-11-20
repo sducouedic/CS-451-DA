@@ -4,25 +4,20 @@
 #include <iostream>
 
 PerfectLink::PerfectLink(const std::vector<Process> &processes, int id, volatile bool *stop_flag)
-    : NetworkUnit(processes), id(id), nb_broadcasted(0), stop_flag(*stop_flag)
+    : NetworkUnit(processes), id(id), stop_flag(*stop_flag)
 {
     this->tcp = new ApproxTCP(sockaddr_from_id(id), this);
 }
 
-void PerfectLink::send(int dest_id, const char *msg)
+void PerfectLink::send(int dest_id, int seq_nr, const char *msg)
 {
-    // std::cout << "PL send" << std::endl;
-    ++nb_broadcasted;
-    tcp->socket_send(sockaddr_from_id(dest_id), nb_broadcasted, msg);
-    broadcasted.push_back(nb_broadcasted);
+    std::cout << "PL --> send " << seq_nr << " to " << dest_id << std::endl;
+    tcp->socket_send(sockaddr_from_id(dest_id), seq_nr, msg);
+    broadcasted.push_back(seq_nr);
 }
 
-void PerfectLink::receive_from_network(int src_id, int seq_nr, const char *msg)
+void PerfectLink::receive(int src_id, int seq_nr, const char *msg)
 {
-    //TEMP
-    // std::cout << "PL --> src: " << src_id
-    //           << ", msg: " << msg << std::endl;
-
     for (auto &d : delivered)
     {
         if (d.src_id == src_id && d.seq_nr == seq_nr)
@@ -31,23 +26,18 @@ void PerfectLink::receive_from_network(int src_id, int seq_nr, const char *msg)
         }
     }
 
+    // copy message to local buffer
     char *buffer = static_cast<char *>(malloc(MAXLINE));
     strncpy(buffer, msg, MSG_SIZE);
     buffer[MAXLINE - 1] = '\0';
 
-    MessageId *msg_id = new MessageId;
-    msg_id->src_id = src_id;
-    msg_id->seq_nr = seq_nr;
-
-    deliver(src_id, buffer);
-    delivered.push_back(*msg_id);
-
+    // deliver message
+    deliver(src_id, seq_nr, buffer);
     free(buffer);
 }
 
 void PerfectLink::log_state(std::ofstream &file)
 {
-    // std::cout << "loooog" << std::endl;
     for (size_t i = 0; i < broadcasted.size(); ++i)
     {
         file << "b " << broadcasted[i] << "\n";
@@ -59,13 +49,18 @@ void PerfectLink::log_state(std::ofstream &file)
     }
 }
 
-void PerfectLink::deliver(int src_id, const char *msg)
+void PerfectLink::deliver(int src_id, int seq_nr, const char *msg)
 {
-    if (stop_flag)
+    MessageId *msg_id = new MessageId;
+    msg_id->src_id = src_id;
+    msg_id->seq_nr = seq_nr;
+
+    // add the message to the list of delivered messages
+    if (!stop_flag)
     {
-        while (true)
-        {
-        }
+        delivered.push_back(*msg_id);
+
+        // TEMP
+        std::cout << "PL --> delivers " << seq_nr << " from " << src_id << std::endl;
     }
-    // std::cout << "PL--> delivered " << msg << std::endl;
 }

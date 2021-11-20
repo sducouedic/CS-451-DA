@@ -10,35 +10,31 @@ public:
     /// Class constructor : setup the list of hosts addresses then open and bind a socket
     PerfectLink(const std::vector<Process> &processes, int id, volatile bool *stop_flag);
 
-    /// TODO Send a message to a recipient host (@see BroadcastUnit)
-    void send(int dest_id, const char *msg) override;
+    /// (@see BroadcastUnit) Send a message to a recipient host
+    void send(int dest_id, int seq_nr, const char *msg) override;
 
-    /// TODO Receive a message from a source host (@see BroadcastUnit)
-    void receive(int src_id, const char *msg) override {} /// TODO Receive a message from a source host (@see BroadcastUnit)
-
-    ///@see NetworkUnit
-    void receive_from_network(int src_id, int token, const char *msg) override;
+    ///  (@see BroadcastUnit) Receive a message from a source host
+    void receive(int src_id, int seq_nr, const char *msg) override;
 
     /// finish et and log into outputs
     void log_state(std::ofstream &file) override;
 
-    /// get tcp
+    /// get tcp TODO remove and start by hand
     ApproxTCP *getTCP() { return tcp; }
 
 protected:
-    /// TODO Deliver a message from a source host to the upper layer (@see BroadcastUnit)
-    void deliver(int src_id, const char *msg);
+    /// (@see BroadcastUnit) Deliver a message from a source host to the upper layer
+    void deliver(int src_id, int seq_nr, const char *msg) override;
 
 private:
     int id; // host id
 
+    // TODO move to NetworkUnit
     ApproxTCP *tcp; // lower level to send message
 
     std::vector<MessageId> delivered;
-    // int nb_delivered;
 
     std::vector<int> broadcasted;
-    int nb_broadcasted;
 
     volatile bool &stop_flag; // flag to immediately stop processing msg
 };

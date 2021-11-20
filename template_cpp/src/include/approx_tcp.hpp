@@ -16,6 +16,7 @@
 #define MSG_START (SEQ_SIZE + ACK_SIZE)
 #define MSG_SIZE (MAXLINE - MSG_START) - 1
 
+// TODO explicit more
 // Define an acknowledgement from a host for a msg
 struct ACK
 {
