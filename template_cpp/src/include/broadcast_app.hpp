@@ -3,12 +3,14 @@
 #include "perfect_link.hpp"
 #include <fstream>
 
+// Broadcast configuration
 struct Config
 {
-    int nb_msgs;
-    int dest_id;
+    int nb_msgs; // number of message to send
+    int dest_id; // who to send all those messages
 };
 
+/// The main application that broadcasts and delivers messages depending on the configurations
 class BroadcastApp
 {
 public:
@@ -24,7 +26,10 @@ public:
     {
         file.open(outputPath);
 
-        pf->getTCP()->start();
+        // connect perfectlink to the network
+        pf->start_networking();
+
+        // send messages
         if (id != configs.dest_id)
         {
             char *msg = static_cast<char *>(malloc(MSG_SIZE));
@@ -36,6 +41,7 @@ public:
         }
     }
 
+    // log current state in file
     void log_state()
     {
         pf->log_state(file);

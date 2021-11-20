@@ -8,40 +8,37 @@
 #include <vector>
 #include <list>
 
-#include "network_unit.hpp"
-
 #define MAXLINE 64
 #define ACK_SIZE 1
 #define SEQ_SIZE 4
 #define MSG_START (SEQ_SIZE + ACK_SIZE)
 #define MSG_SIZE (MAXLINE - MSG_START) - 1
 
-// TODO explicit more
 // Define an acknowledgement from a host for a msg
 struct ACK
 {
-    const sockaddr_in *addr;
-    int seq_nr;
+    const sockaddr_in *addr; // host that acknowledged
+    int seq_nr;              // sequence number of acknowledged message
+    char *msg = nullptr;     // acknowledged message
 
-    bool comparison(const ACK &a) const
+    // two acknowledgments are the same if same host and seq_nr
+    bool isEqual(const ACK &a) const
     {
         return a.addr == addr && a.seq_nr == seq_nr;
     }
 };
 
-struct ACKmsg
-{
-    ACK ack;
-    char *msg;
-};
+// forward declaration because of interdependencies
+class NetworkUnit;
 
+/// A class that approximates TCP (or stubborn link in some sense)
+/// Continuously resends a message until it receives an acknowledgment
 class ApproxTCP
 {
 
 public:
+    /// Class Constructor: setup socakaddr and upper layer instance
     ApproxTCP(const sockaddr_in *host_addr, NetworkUnit *upper_layer = nullptr);
-
-    ~ApproxTCP();
 
     // start listenning to socket and send messages
     void start();
@@ -61,7 +58,7 @@ private:
 
     NetworkUnit *upper_layer; // perfectlink to whom deliver msg
 
-    std::list<ACKmsg> lacking_acks; // ACKs we are still waiting for
+    std::list<ACK> lacking_acks; // ACKs we are still waiting for
 
 private:
     // listen to socket (either for acks or new msg)

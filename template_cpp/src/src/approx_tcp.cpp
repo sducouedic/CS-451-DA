@@ -1,4 +1,6 @@
 #include "approx_tcp.hpp"
+#include "network_unit.hpp"
+
 #include <limits>
 
 ApproxTCP::ApproxTCP(const sockaddr_in *host_addr, NetworkUnit *upper_layer)
@@ -32,7 +34,6 @@ void ApproxTCP::socket_polling()
     ssize_t tot_len;
     char buffer[MAXLINE];
 
-    // std::cout << "begin socket polling" << std::endl;
     while (true)
     {
         // receive new message
@@ -57,25 +58,10 @@ void ApproxTCP::socket_polling()
             exit(EXIT_FAILURE);
         }
 
-        // TEMP
-        // std::cout << "received msg" << std::endl;
-
-        // for (int i = 0; i < MAXLINE; ++i)
-        // {
-        //     std::cout << i << static_cast<int>(buffer[i]) << " ";
-        // }
-        // std::cout << std::endl
-        //           << std::endl;
-
         bool is_ack;
         int seq_nr;
         char *msg = static_cast<char *>(malloc(MSG_SIZE + 1));
         extract_from_udp_packet(is_ack, seq_nr, msg, buffer);
-
-        // TEMP
-        // std::cout << known_src_addr->sin_addr.s_addr << " " << known_src_addr->sin_port
-        //           << ", ack = " << is_ack << ", seq_nr = " << seq_nr
-        //           << ", msg: " << msg << std::endl;
 
         if (is_ack)
         {
@@ -102,7 +88,7 @@ void ApproxTCP::socket_pushing()
         for (auto &ack : lacking_acks)
         {
             char *msg = ack.msg;
-            const sockaddr_in *addr = ack.ack.addr;
+            const sockaddr_in *addr = ack.addr;
             sendto(sockfd, msg, MAXLINE, 0, reinterpret_cast<const sockaddr *>(addr), sizeof(*addr));
         }
     }
@@ -110,31 +96,19 @@ void ApproxTCP::socket_pushing()
 
 void ApproxTCP::socket_send(const sockaddr_in *dest, int seq_nr, const char *msg)
 {
-    // TEMP
-    // std::cout << "in socket send " << msg << std::endl;
-    // std::cout << "dest is " << dest->sin_addr.s_addr << " " << dest->sin_port << std::endl;
-
     char *buffer = static_cast<char *>(malloc(MAXLINE));
     build_udp_packet(false, seq_nr, msg, buffer);
 
-    // for (int i = 0; i < MAXLINE; ++i)
-    // {
-    //     std::cout << i << static_cast<int>(buffer[i]) << " ";
-    // }
-    // std::cout << std::endl
-    //           << std::endl;
-
     // build ACK
-    ACKmsg *ack = new ACKmsg;
-    ack->ack = *(new ACK);
-    ack->ack.addr = dest;
-    ack->ack.seq_nr = seq_nr;
+    ACK *ack = new ACK;
+    ack->addr = dest;
+    ack->seq_nr = seq_nr;
     ack->msg = buffer;
 
     // ack already in lacking_acks
     for (auto &a : lacking_acks)
     {
-        if (a.ack.comparison(ack->ack))
+        if (a.isEqual(*ack))
             return;
     }
 
@@ -146,8 +120,6 @@ void ApproxTCP::socket_send(const sockaddr_in *dest, int seq_nr, const char *msg
 
 void ApproxTCP::socket_receive(const sockaddr_in *src, int seq_nr, const char *msg)
 {
-    //TEMPS
-    // std::cout << "received message, sending ack " << std::endl;
     char buffer[MAXLINE];
     build_udp_packet(true, seq_nr, msg, buffer);
     sendto(sockfd, buffer, MAXLINE, 0, reinterpret_cast<const sockaddr *>(src), sizeof(*src));
@@ -158,17 +130,12 @@ void ApproxTCP::socket_receive(const sockaddr_in *src, int seq_nr, const char *m
 
 void ApproxTCP::handle_ack(ACK &ack)
 {
-    //TEMP
-    // std::cout << "is ack!! "
-    //           << "size before: " << lacking_acks.size();
-
     // simply remove it form lacking_acks
     auto it = lacking_acks.begin();
     while (it != lacking_acks.end())
     {
-        if (it->ack.comparison(ack))
+        if (it->isEqual(ack))
         {
-            // std::cout << "find! remove" << std::endl;
             free(it->msg);
             it = lacking_acks.erase(it);
         }
@@ -177,9 +144,6 @@ void ApproxTCP::handle_ack(ACK &ack)
             ++it;
         }
     }
-
-    //TEMP
-    // std::cout << ", size after: " << lacking_acks.size() << std::endl;
 }
 
 int ApproxTCP::create_bind_socket()
@@ -209,13 +173,6 @@ void ApproxTCP::build_udp_packet(bool is_ack, int seq_nr, const char *msg, char 
 
     // set seq_nr
     memcpy(buffer + 1, reinterpret_cast<char *>(&seq_nr), sizeof(int));
-
-    // TEMP
-    // std::cout << "seq_nr: ";
-    // for (int i = 0; i < 4; i++)
-    // {
-    //     std::cout << static_cast<int>(buffer[1 + i]) << " ";
-    // }
 
     // set message
     strncpy(buffer + MSG_START, msg, MSG_SIZE);

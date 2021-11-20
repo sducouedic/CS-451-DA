@@ -22,11 +22,9 @@ public:
     ~BroadcastUnit() = default;
 
     /// Send a messagage to a recipient host
-    // virtual void send(int dest_id, const char *msg) = 0; TODO remove
     virtual void send(int dest_id, int seq_nr, const char *msg) = 0;
 
     /// Receive a message from a source host
-    // virtual void receive(int src_id, const char *msg) = 0; TODO remove
     virtual void receive(int src_id, int seq_nr, const char *msg) = 0;
 
     /// Crash of the process

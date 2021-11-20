@@ -6,6 +6,7 @@
 #include <iostream>
 
 #include "broadcast_unit.hpp"
+#include "approx_tcp.hpp"
 
 /// A simple abstraction of message identifier
 struct MessageId
@@ -19,7 +20,13 @@ class NetworkUnit : public BroadcastUnit
 {
 public:
     /// Class Constructor: setup sockaddrs using list of process
-    NetworkUnit(const std::vector<Process> &processes);
+    NetworkUnit(const std::vector<Process> &processes, int host_id);
+
+    /// Start TCP networking
+    void start_networking();
+
+    /// Send message through the network
+    void network_send(int dest_id, int seq_nr, const char *msg);
 
     /// get the sockaddr of a process id
     const sockaddr_in *sockaddr_from_id(int id);
@@ -33,6 +40,8 @@ public:
 
 private:
     std::vector<sockaddr_in> sockaddrs; //sockaddrs corresponding to each process
+
+    ApproxTCP *tcp; // lower level to send message
 
 private:
     // initialise sockaddrs

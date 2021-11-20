@@ -4,15 +4,12 @@
 #include <iostream>
 
 PerfectLink::PerfectLink(const std::vector<Process> &processes, int id, volatile bool *stop_flag)
-    : NetworkUnit(processes), id(id), stop_flag(*stop_flag)
-{
-    this->tcp = new ApproxTCP(sockaddr_from_id(id), this);
-}
+    : NetworkUnit(processes, id), id(id), stop_flag(*stop_flag) {}
 
 void PerfectLink::send(int dest_id, int seq_nr, const char *msg)
 {
     std::cout << "PL --> send " << seq_nr << " to " << dest_id << std::endl;
-    tcp->socket_send(sockaddr_from_id(dest_id), seq_nr, msg);
+    network_send(dest_id, seq_nr, msg);
     broadcasted.push_back(seq_nr);
 }
 

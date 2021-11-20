@@ -1,7 +1,6 @@
 #pragma once
 
 #include "network_unit.hpp"
-#include "approx_tcp.hpp"
 
 /// Define the PerfectLink as seen during the lectures
 class PerfectLink : public NetworkUnit
@@ -19,18 +18,12 @@ public:
     /// finish et and log into outputs
     void log_state(std::ofstream &file) override;
 
-    /// get tcp TODO remove and start by hand
-    ApproxTCP *getTCP() { return tcp; }
-
 protected:
     /// (@see BroadcastUnit) Deliver a message from a source host to the upper layer
     void deliver(int src_id, int seq_nr, const char *msg) override;
 
 private:
     int id; // host id
-
-    // TODO move to NetworkUnit
-    ApproxTCP *tcp; // lower level to send message
 
     std::vector<MessageId> delivered;
 

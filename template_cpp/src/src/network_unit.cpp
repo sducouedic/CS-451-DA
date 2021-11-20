@@ -1,8 +1,20 @@
 #include "network_unit.hpp"
 
-NetworkUnit::NetworkUnit(const std::vector<Process> &processes)
+NetworkUnit::NetworkUnit(const std::vector<Process> &processes, int host_id)
 {
     setup_sockaddrs(processes);
+
+    this->tcp = new ApproxTCP(sockaddr_from_id(host_id), this);
+}
+
+void NetworkUnit::start_networking()
+{
+    tcp->start();
+}
+
+void NetworkUnit::network_send(int dest_id, int seq_nr, const char *msg)
+{
+    tcp->socket_send(sockaddr_from_id(dest_id), seq_nr, msg);
 }
 
 const sockaddr_in *NetworkUnit::sockaddr_from_id(int id)
