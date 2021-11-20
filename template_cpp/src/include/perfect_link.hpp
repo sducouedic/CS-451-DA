@@ -12,7 +12,7 @@ public:
     /// (@see BroadcastUnit) Send a message to a recipient host
     void send(int dest_id, int seq_nr, const char *msg) override;
 
-    ///  (@see BroadcastUnit) Receive a message from a source host
+    /// (@see BroadcastUnit) Receive a message from a source host
     void receive(int src_id, int seq_nr, const char *msg) override;
 
     /// finish et and log into outputs
@@ -25,9 +25,8 @@ protected:
 private:
     int id; // host id
 
-    std::vector<MessageId> delivered;
-
-    std::vector<int> broadcasted;
+    std::vector<MessageId> delivered; // list of delivered messages
+    std::vector<int> broadcasted;     // list of broadcasted messages
 
     volatile bool &stop_flag; // flag to immediately stop processing msg
 };

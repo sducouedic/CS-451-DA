@@ -32,6 +32,5 @@ public:
 
 protected:
     /// Deliver a message from a source host to the upper layer
-    // virtual void deliver(int src_id, const char *msg) = 0; TODO remove
     virtual void deliver(int src_id, int seq_nr, const char *msg) = 0;
 };

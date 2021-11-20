@@ -3,7 +3,7 @@
 #include "perfect_link.hpp"
 #include <fstream>
 
-// Broadcast configuration
+/// Broadcast configurations
 struct Config
 {
     int nb_msgs; // number of message to send
@@ -14,14 +14,17 @@ struct Config
 class BroadcastApp
 {
 public:
+    // flag is set in main.cpp when terminal signal arises
     inline volatile static bool stop_flag = false;
 
+    /// Constructor
     BroadcastApp(const Config &configs, const std::vector<Process> &processes, int id, const char *outputPath)
         : configs(configs), processes(processes), id(id), outputPath(outputPath)
     {
         pf = new PerfectLink(processes, id, &stop_flag);
     }
 
+    /// Start the app
     void start()
     {
         file.open(outputPath);
@@ -41,7 +44,7 @@ public:
         }
     }
 
-    // log current state in file
+    /// Log current state in file
     void log_state()
     {
         pf->log_state(file);
@@ -49,15 +52,12 @@ public:
     }
 
 private:
+    PerfectLink *pf;
+
     Config configs;
-
     std::vector<Process> processes;
-
     int id;
 
     const char *outputPath;
-
     std::ofstream file;
-
-    PerfectLink *pf;
 };

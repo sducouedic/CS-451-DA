@@ -14,7 +14,7 @@
 #define MSG_START (SEQ_SIZE + ACK_SIZE)
 #define MSG_SIZE (MAXLINE - MSG_START) - 1
 
-// Define an acknowledgement from a host for a msg
+/// Defines an acknowledgement from a host for a msg
 struct ACK
 {
     const sockaddr_in *addr; // host that acknowledged
@@ -28,7 +28,7 @@ struct ACK
     }
 };
 
-// forward declaration because of interdependencies
+// Forward declaration because of interdependencies
 class NetworkUnit;
 
 /// A class that approximates TCP (or stubborn link in some sense)
@@ -40,12 +40,13 @@ public:
     /// Class Constructor: setup socakaddr and upper layer instance
     ApproxTCP(const sockaddr_in *host_addr, NetworkUnit *upper_layer = nullptr);
 
-    // start listenning to socket and send messages
+    /// starts listenning to socket and sending messages
     void start();
 
-    // send message through the socket
+    /// send message through the socket
     void socket_send(const sockaddr_in *dest, int seq_nr, const char *msg);
 
+    /// set the upper layer
     void set_network_unit(NetworkUnit *unit)
     {
         upper_layer = unit;
