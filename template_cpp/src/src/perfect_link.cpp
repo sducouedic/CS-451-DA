@@ -3,34 +3,28 @@
 //TEMP
 #include <iostream>
 
-PerfectLink::PerfectLink(const std::vector<Process> &processes, int id, volatile bool *stop_flag)
-    : NetworkUnit(processes, id), id(id), stop_flag(*stop_flag) {}
+PerfectLink::PerfectLink(const std::vector<Process> *processes, int id, volatile bool *stop_flag)
+    : NetworkUnit(processes, id, stop_flag) {}
 
-void PerfectLink::send(int dest_id, int seq_nr, const char *msg)
+void PerfectLink::send(int dest_id, const Message &message)
 {
-    std::cout << "PL --> send " << seq_nr << " to " << dest_id << std::endl;
-    network_send(dest_id, seq_nr, msg);
-    broadcasted.push_back(seq_nr);
+    std::cout << "PL --> send " << message.seq_nr << " to " << dest_id << std::endl;
+    network_send(dest_id, message);
+    broadcasted.push_back(message.seq_nr);
 }
 
-void PerfectLink::receive(int src_id, int seq_nr, const char *msg)
+void PerfectLink::receive(int src_id, const Message &message)
 {
     for (auto &d : delivered)
     {
-        if (d.src_id == src_id && d.seq_nr == seq_nr)
+        if (d.first == src_id && d.second == message.seq_nr)
         {
             return;
         }
     }
 
-    // copy message to local buffer
-    char *buffer = static_cast<char *>(malloc(MAXLINE));
-    strncpy(buffer, msg, MSG_SIZE);
-    buffer[MAXLINE - 1] = '\0';
-
     // deliver message
-    deliver(src_id, seq_nr, buffer);
-    free(buffer);
+    deliver(src_id, message);
 }
 
 void PerfectLink::log_state(std::ofstream &file)
@@ -42,22 +36,19 @@ void PerfectLink::log_state(std::ofstream &file)
 
     for (size_t i = 0; i < delivered.size(); ++i)
     {
-        file << "d " << delivered[i].src_id << " " << delivered[i].seq_nr << "\n";
+        file << "d " << delivered[i].first << " " << delivered[i].second << "\n";
     }
 }
 
-void PerfectLink::deliver(int src_id, int seq_nr, const char *msg)
+void PerfectLink::deliver(int src_id, const Message &message)
 {
-    MessageId *msg_id = new MessageId;
-    msg_id->src_id = src_id;
-    msg_id->seq_nr = seq_nr;
-
     // add the message to the list of delivered messages
+    // TODO remove stop_flag
     if (!stop_flag)
     {
-        delivered.push_back(*msg_id);
+        delivered.push_back(std::pair<int, int>(src_id, message.seq_nr));
 
         // TEMP
-        std::cout << "PL --> delivers " << seq_nr << " from " << src_id << std::endl;
+        std::cout << "PL --> delivers " << message.seq_nr << " from " << src_id << std::endl;
     }
 }

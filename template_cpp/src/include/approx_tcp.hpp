@@ -1,11 +1,9 @@
 #pragma once
 
+#include "broadcast_unit.hpp"
+
 #include <thread>
-#include <sys/socket.h>
-#include <arpa/inet.h>
 #include <cstring>
-#include <iostream>
-#include <vector>
 #include <list>
 
 #define MAXLINE 64
@@ -17,14 +15,13 @@
 /// Defines an acknowledgement from a host for a msg
 struct ACK
 {
-    const sockaddr_in *addr; // host that acknowledged
-    int seq_nr;              // sequence number of acknowledged message
-    char *msg = nullptr;     // acknowledged message
+    const sockaddr_in *addr = nullptr; // host that acknowledged
+    Message message;                   // acknowledged message
 
     // two acknowledgments are the same if same host and seq_nr
     bool isEqual(const ACK &a) const
     {
-        return a.addr == addr && a.seq_nr == seq_nr;
+        return a.addr == addr && a.message.seq_nr == message.seq_nr;
     }
 };
 
@@ -44,7 +41,7 @@ public:
     void start();
 
     /// send message through the socket
-    void socket_send(const sockaddr_in *dest, int seq_nr, const char *msg);
+    void socket_send(const sockaddr_in *dest, const Message &message);
 
     /// set the upper layer
     void set_network_unit(NetworkUnit *unit)
@@ -57,7 +54,7 @@ private:
 
     int sockfd; // socket file descriptor
 
-    NetworkUnit *upper_layer; // perfectlink to whom deliver msg
+    NetworkUnit *upper_layer; // network unit to whom to deliver msg
 
     std::list<ACK> lacking_acks; // ACKs we are still waiting for
 
@@ -69,7 +66,7 @@ private:
     void socket_pushing();
 
     // received a message from a host
-    void socket_receive(const sockaddr_in *src, int seq_nr, const char *msg);
+    void socket_receive(const sockaddr_in *src, const Message &message);
 
     // handling ack from a host for a given msg
     void handle_ack(ACK &ack);
@@ -78,8 +75,8 @@ private:
     int create_bind_socket();
 
     // build udp packet given ack, seq_nr and message
-    void build_udp_packet(bool is_ack, int seq_nr, const char *msg, char *buffer);
+    void build_udp_packet(bool is_ack, const Message &message, char *buffer);
 
     // extract information from udp packet
-    void extract_from_udp_packet(bool &is_ack, int &seq_nr, char *msg, const char *udp_packet);
+    void extract_from_udp_packet(bool &is_ack, Message &message, const char *udp_packet);
 };

@@ -161,7 +161,8 @@ public:
     if (std::getline(confile, line))
     {
       std::istringstream iss(line);
-      if (!(iss >> nb_msg >> dest_id))
+      // if (!(iss >> nb_msg >> dest_id)) // was for perfectlink
+      if (!(iss >> nb_msg))
       {
         std::ostringstream os;
         os << "Parsing for `" << configPath() << "` failed ";

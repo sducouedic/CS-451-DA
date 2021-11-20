@@ -1,32 +1,22 @@
 #pragma once
 
-#include <sys/socket.h>
-#include <arpa/inet.h>
-#include <vector>
 #include <iostream>
 
 #include "broadcast_unit.hpp"
 #include "approx_tcp.hpp"
-
-/// A simple abstraction of message identifier
-struct MessageId
-{
-    int src_id;
-    int seq_nr;
-};
 
 /// The lowest-level layer of the broadcast application; needs to interact with the network
 class NetworkUnit : public BroadcastUnit
 {
 public:
     /// Class Constructor: setup sockaddrs using list of process
-    NetworkUnit(const std::vector<Process> &processes, int host_id);
+    NetworkUnit(const std::vector<Process> *processes, int id, volatile bool *stop_flag);
 
     /// Start TCP networking
     void start_networking();
 
     /// Send message through the network
-    void network_send(int dest_id, int seq_nr, const char *msg);
+    void network_send(int dest_id, const Message &message);
 
     /// get the sockaddr of a process id
     const sockaddr_in *sockaddr_from_id(int id);

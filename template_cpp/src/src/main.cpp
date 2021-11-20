@@ -8,7 +8,7 @@
 
 #include <signal.h>
 
-static BroadcastApp *bd;
+static BroadcastApp *broadcast_app;
 
 static void stop(int)
 {
@@ -18,7 +18,7 @@ static void stop(int)
 
   // set stop_flag to true
   BroadcastApp::stop_flag = true;
-  bd->log_state();
+  broadcast_app->log_state();
 
   // immediately stop network packet processing
   std::cout << "Immediately stopping network packet processing.\n";
@@ -86,18 +86,18 @@ int main(int argc, char **argv)
     processes.push_back(p);
   }
 
-  int nb_msg, dest_id, loc_id;
+  int nb_msg = 0, dest_id = 0, loc_id = 0;
   parser.confs(nb_msg, dest_id);
   Config confs;
   confs.nb_msgs = nb_msg;
-  confs.dest_id = dest_id;
+  // confs.dest_id = dest_id; //needed for perfect link
   loc_id = static_cast<int>(parser.id());
 
-  bd = new BroadcastApp(confs, processes, loc_id, parser.outputPath());
+  broadcast_app = new BroadcastApp(confs, processes, loc_id, parser.outputPath());
 
   std::cout << "Broadcasting and delivering messages...\n\n";
 
-  bd->start();
+  broadcast_app->start();
 
   // After a process finishes broadcasting,
   // it waits forever for the delivery of messages.
