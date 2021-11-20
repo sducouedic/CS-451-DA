@@ -11,13 +11,6 @@ struct Process
     unsigned short port;
 };
 
-/// A simple abstraction of message identifier
-struct MessageId
-{
-    int src_id;
-    int seq_nr;
-};
-
 /// A Generic class for any layer unit of a broadcast application
 class BroadcastUnit
 {

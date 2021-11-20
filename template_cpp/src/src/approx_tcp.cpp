@@ -1,7 +1,7 @@
 #include "approx_tcp.hpp"
 #include <limits>
 
-ApproxTCP::ApproxTCP(sockaddr_in *host_addr, NetworkUnit *upper_layer)
+ApproxTCP::ApproxTCP(const sockaddr_in *host_addr, NetworkUnit *upper_layer)
     : upper_layer(upper_layer)
 {
     if (host_addr == nullptr)
@@ -33,7 +33,7 @@ void ApproxTCP::socket_polling()
     char buffer[MAXLINE];
 
     //TEMP
-    std::cout << "begin socket polling" << std::endl;
+    // std::cout << "begin socket polling" << std::endl;
     while (true)
     {
         // receive new message
@@ -51,15 +51,15 @@ void ApproxTCP::socket_polling()
         buffer[tot_len] = '\0';
 
         // We want the ptr to the address stored in the upper_layer unit
-        src_addr = upper_layer->sockaddr_local(*src_addr);
-        if (src_addr == nullptr)
+        const sockaddr_in *known_src_addr = upper_layer->sockaddr_local(*src_addr);
+        if (known_src_addr == nullptr)
         {
             std::cerr << "receive msg from unkown source" << std::flush;
             exit(EXIT_FAILURE);
         }
 
         // TEMP
-        std::cout << "received msg" << std::endl;
+        // std::cout << "received msg" << std::endl;
 
         // for (int i = 0; i < MAXLINE; ++i)
         // {
@@ -74,20 +74,20 @@ void ApproxTCP::socket_polling()
         extract_from_udp_packet(is_ack, seq_nr, msg, buffer);
 
         // TEMP
-        std::cout << src_addr->sin_addr.s_addr << " " << src_addr->sin_port
-                  << ", ack = " << is_ack << ", seq_nr = " << seq_nr
-                  << ", msg: " << msg << std::endl;
+        // std::cout << known_src_addr->sin_addr.s_addr << " " << known_src_addr->sin_port
+        //           << ", ack = " << is_ack << ", seq_nr = " << seq_nr
+        //           << ", msg: " << msg << std::endl;
 
         if (is_ack)
         {
             ACK ack;
-            ack.addr = src_addr;
+            ack.addr = known_src_addr;
             ack.seq_nr = seq_nr;
             handle_ack(ack);
         }
         else
         {
-            socket_receive(src_addr, seq_nr, msg);
+            socket_receive(known_src_addr, seq_nr, msg);
         }
 
         // free the message
@@ -103,17 +103,17 @@ void ApproxTCP::socket_pushing()
         for (auto &ack : lacking_acks)
         {
             char *msg = ack.msg;
-            sockaddr_in *addr = ack.ack.addr;
+            const sockaddr_in *addr = ack.ack.addr;
             sendto(sockfd, msg, MAXLINE, 0, reinterpret_cast<const sockaddr *>(addr), sizeof(*addr));
         }
     }
 }
 
-void ApproxTCP::socket_send(sockaddr_in *dest, int seq_nr, const char *msg)
+void ApproxTCP::socket_send(const sockaddr_in *dest, int seq_nr, const char *msg)
 {
     // TEMP
-    std::cout << "in socket send " << msg << std::endl;
-    std::cout << "dest is " << dest->sin_addr.s_addr << " " << dest->sin_port << std::endl;
+    // std::cout << "in socket send " << msg << std::endl;
+    // std::cout << "dest is " << dest->sin_addr.s_addr << " " << dest->sin_port << std::endl;
 
     char *buffer = static_cast<char *>(malloc(MAXLINE));
     build_udp_packet(false, seq_nr, msg, buffer);
@@ -142,27 +142,26 @@ void ApproxTCP::socket_send(sockaddr_in *dest, int seq_nr, const char *msg)
     sendto(sockfd, buffer, MAXLINE, 0, reinterpret_cast<const sockaddr *>(dest), sizeof(*dest));
 
     // add new ack in lacking_acks
-    lacking_acks.push_front(*ack);
+    lacking_acks.push_back(*ack);
 }
 
-void ApproxTCP::socket_receive(sockaddr_in *src, int seq_nr, const char *msg)
+void ApproxTCP::socket_receive(const sockaddr_in *src, int seq_nr, const char *msg)
 {
     //TEMPS
-    std::cout << "received message, sending ack " << std::endl;
+    // std::cout << "received message, sending ack " << std::endl;
     char buffer[MAXLINE];
     build_udp_packet(true, seq_nr, msg, buffer);
     sendto(sockfd, buffer, MAXLINE, 0, reinterpret_cast<const sockaddr *>(src), sizeof(*src));
 
-    // TODO deliver
     int id = upper_layer->id_from_sockaddr(src);
-    upper_layer->receive(id, seq_nr, msg);
+    upper_layer->receive_from_network(id, seq_nr, msg);
 }
 
 void ApproxTCP::handle_ack(ACK &ack)
 {
     //TEMP
-    std::cout << "is ack!! "
-              << "size before: " << lacking_acks.size();
+    // std::cout << "is ack!! "
+    //           << "size before: " << lacking_acks.size();
 
     // simply remove it form lacking_acks
     auto it = lacking_acks.begin();
@@ -170,7 +169,7 @@ void ApproxTCP::handle_ack(ACK &ack)
     {
         if (it->ack.comparison(ack))
         {
-            std::cout << "find! remove" << std::endl;
+            // std::cout << "find! remove" << std::endl;
             free(it->msg);
             it = lacking_acks.erase(it);
         }
@@ -181,7 +180,7 @@ void ApproxTCP::handle_ack(ACK &ack)
     }
 
     //TEMP
-    std::cout << ", size after: " << lacking_acks.size() << std::endl;
+    // std::cout << ", size after: " << lacking_acks.size() << std::endl;
 }
 
 int ApproxTCP::create_bind_socket()

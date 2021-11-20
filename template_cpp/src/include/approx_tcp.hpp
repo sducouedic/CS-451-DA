@@ -19,7 +19,7 @@
 // Define an acknowledgement from a host for a msg
 struct ACK
 {
-    sockaddr_in *addr;
+    const sockaddr_in *addr;
     int seq_nr;
 
     bool comparison(const ACK &a) const
@@ -38,7 +38,7 @@ class ApproxTCP
 {
 
 public:
-    ApproxTCP(sockaddr_in *host_addr, NetworkUnit *upper_layer = nullptr);
+    ApproxTCP(const sockaddr_in *host_addr, NetworkUnit *upper_layer = nullptr);
 
     ~ApproxTCP();
 
@@ -46,7 +46,7 @@ public:
     void start();
 
     // send message through the socket
-    void socket_send(sockaddr_in *dest, int seq_nr, const char *msg);
+    void socket_send(const sockaddr_in *dest, int seq_nr, const char *msg);
 
     void set_network_unit(NetworkUnit *unit)
     {
@@ -54,7 +54,7 @@ public:
     }
 
 private:
-    sockaddr_in *addr; // host address
+    const sockaddr_in *addr; // host address
 
     int sockfd; // socket file descriptor
 
@@ -70,7 +70,7 @@ private:
     void socket_pushing();
 
     // received a message from a host
-    void socket_receive(sockaddr_in *src, int seq_nr, const char *msg);
+    void socket_receive(const sockaddr_in *src, int seq_nr, const char *msg);
 
     // handling ack from a host for a given msg
     void handle_ack(ACK &ack);

@@ -5,19 +5,19 @@ NetworkUnit::NetworkUnit(const std::vector<Process> &processes)
     setup_sockaddrs(processes);
 }
 
-sockaddr_in *NetworkUnit::sockaddr_from_id(int id)
+const sockaddr_in *NetworkUnit::sockaddr_from_id(int id)
 {
-    if (id < static_cast<int>(sockaddrs.size()))
+    if (id <= static_cast<int>(sockaddrs.size()))
     {
         return &(sockaddrs[id - 1]);
     }
     return nullptr;
 }
 
-int NetworkUnit::id_from_sockaddr(sockaddr_in *addr)
+int NetworkUnit::id_from_sockaddr(const sockaddr_in *addr)
 {
     int len(static_cast<int>(sockaddrs.size()));
-    for (int i(0); i < len; i++)
+    for (int i = 0; i < len; i++)
     {
         sockaddr_in ref = sockaddrs[i];
         if (ref.sin_port == addr->sin_port && ref.sin_addr.s_addr == addr->sin_addr.s_addr)
@@ -28,7 +28,7 @@ int NetworkUnit::id_from_sockaddr(sockaddr_in *addr)
     return -1;
 }
 
-sockaddr_in *NetworkUnit::sockaddr_local(sockaddr_in &addr)
+const sockaddr_in *NetworkUnit::sockaddr_local(const sockaddr_in &addr)
 {
     for (auto &a : sockaddrs)
     {

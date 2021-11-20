@@ -4,23 +4,24 @@
 #include <iostream>
 
 PerfectLink::PerfectLink(const std::vector<Process> &processes, int id, volatile bool *stop_flag)
-    : NetworkUnit(processes), id(id), stop_flag(*stop_flag)
+    : NetworkUnit(processes), id(id), nb_broadcasted(0), stop_flag(*stop_flag)
 {
     this->tcp = new ApproxTCP(sockaddr_from_id(id), this);
 }
 
-void PerfectLink::send(int dest_id, int seq_nr, const char *msg)
+void PerfectLink::send(int dest_id, const char *msg)
 {
-    std::cout << "PL send" << std::endl;
-    tcp->socket_send(sockaddr_from_id(dest_id), seq_nr, msg);
-    broadcasted.push_back(seq_nr);
+    // std::cout << "PL send" << std::endl;
+    ++nb_broadcasted;
+    tcp->socket_send(sockaddr_from_id(dest_id), nb_broadcasted, msg);
+    broadcasted.push_back(nb_broadcasted);
 }
 
-void PerfectLink::receive(int src_id, int seq_nr, const char *msg)
+void PerfectLink::receive_from_network(int src_id, int seq_nr, const char *msg)
 {
     //TEMP
-    std::cout << "PL --> src: " << src_id << " , seq: " << seq_nr
-              << ", msg: " << msg << std::endl;
+    // std::cout << "PL --> src: " << src_id
+    //           << ", msg: " << msg << std::endl;
 
     for (auto &d : delivered)
     {
@@ -34,12 +35,19 @@ void PerfectLink::receive(int src_id, int seq_nr, const char *msg)
     strncpy(buffer, msg, MSG_SIZE);
     buffer[MAXLINE - 1] = '\0';
 
-    deliver(src_id, seq_nr, buffer);
+    MessageId *msg_id = new MessageId;
+    msg_id->src_id = src_id;
+    msg_id->seq_nr = seq_nr;
+
+    deliver(src_id, buffer);
+    delivered.push_back(*msg_id);
+
     free(buffer);
 }
 
 void PerfectLink::log_state(std::ofstream &file)
 {
+    // std::cout << "loooog" << std::endl;
     for (size_t i = 0; i < broadcasted.size(); ++i)
     {
         file << "b " << broadcasted[i] << "\n";
@@ -51,15 +59,13 @@ void PerfectLink::log_state(std::ofstream &file)
     }
 }
 
-void PerfectLink::deliver(int src_id, int seq_nr, const char *msg)
+void PerfectLink::deliver(int src_id, const char *msg)
 {
-    MessageId *msg_id = new MessageId;
-    msg_id->src_id = src_id;
-    msg_id->seq_nr = seq_nr;
-
-    if (!stop_flag)
+    if (stop_flag)
     {
-        delivered.push_back(*msg_id);
-        std::cout << "PL--> delivered " << msg << std::endl;
+        while (true)
+        {
+        }
     }
+    // std::cout << "PL--> delivered " << msg << std::endl;
 }

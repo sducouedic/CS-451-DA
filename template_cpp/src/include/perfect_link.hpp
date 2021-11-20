@@ -14,7 +14,10 @@ public:
     void send(int dest_id, const char *msg) override;
 
     /// TODO Receive a message from a source host (@see BroadcastUnit)
-    void receive(int src_id, const char *msg) override;
+    void receive(int src_id, const char *msg) override {} /// TODO Receive a message from a source host (@see BroadcastUnit)
+
+    ///@see NetworkUnit
+    void receive_from_network(int src_id, int token, const char *msg) override;
 
     /// finish et and log into outputs
     void log_state(std::ofstream &file) override;
@@ -32,8 +35,10 @@ private:
     ApproxTCP *tcp; // lower level to send message
 
     std::vector<MessageId> delivered;
+    // int nb_delivered;
 
     std::vector<int> broadcasted;
+    int nb_broadcasted;
 
     volatile bool &stop_flag; // flag to immediately stop processing msg
 };
