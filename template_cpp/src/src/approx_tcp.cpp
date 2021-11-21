@@ -62,6 +62,7 @@ void ApproxTCP::socket_polling()
         // build message
         bool is_ack;
         Message message;
+        message.msg = static_cast<char *>(malloc(MSG_SIZE_TCP + 1));
         extract_from_udp_packet(is_ack, message, buffer);
 
         if (is_ack)
@@ -206,4 +207,10 @@ void ApproxTCP::extract_from_udp_packet(bool &is_ack, Message &tcp_msg, const ch
     strncpy(msg, udp_packet + MSG_START_TCP, MSG_SIZE_TCP);
     msg[MSG_SIZE_TCP] = '\0';
     tcp_msg.msg = msg;
+
+    if (udp_packet[MSG_SIZE_TCP + SRC_ID_SIZE] == 0 and udp_packet[MSG_SIZE_TCP + SRC_ID_SIZE + 1] == 0 and udp_packet[MSG_SIZE_TCP + SRC_ID_SIZE + 2] == 0 and udp_packet[MSG_SIZE_TCP + SRC_ID_SIZE + 3] == 0)
+    {
+        std::cerr << " dddddec error" << std::endl;
+        exit(EXIT_FAILURE);
+    }
 }

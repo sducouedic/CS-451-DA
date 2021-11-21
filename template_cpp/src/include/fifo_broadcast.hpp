@@ -1,20 +1,22 @@
 #pragma once
 
-#include "best_effort_broadcast.hpp"
+#include "uniform_rel_broadcast.hpp"
 
 #include <map>
 #include <set>
 #include <vector>
 
-/// An implementation of uniform reliable broadcast
-class UniformRelBroadcast : public BroadcastUnit
+#define MSG_SIZE_FIFO (MSG_SIZE_PL - SRC_ID_SIZE - SEQ_SIZE)
+
+/// An implementation of fifo causal broadcast
+class FIFOBroadcast : public BroadcastUnit
 {
 public:
     /// Class constructor
-    UniformRelBroadcast(const std::vector<Process> *processes, int id, volatile bool *stop_flag,
-                        PerfectLink *perfect_link, BroadcastUnit *upper_layer = nullptr);
+    FIFOBroadcast(const std::vector<Process> *processes, int id, volatile bool *stop_flag,
+                  PerfectLink *perfect_link, BroadcastUnit *upper_layer = nullptr);
 
-    virtual ~UniformRelBroadcast() { delete (best_eff_broadcast); }
+    virtual ~FIFOBroadcast() { delete (uniform_rel_broadcast); }
 
     /// (@see BroadcastUnit) Broadcast a message
     void broadcast(const Message &message) override;
@@ -33,20 +35,19 @@ protected:
     void deliver(int src_id, const Message &message) override;
 
 private:
-    BestEffortBroadcast *best_eff_broadcast;
+    UniformRelBroadcast *uniform_rel_broadcast;
 
-    // associate a message to the list of processes that acknowledged it
-    std::map<MessageFrom, std::vector<int>> message_acks;
-    int MIN_ACKS;
+    std::map<int, int> vector_clocks;
+    std::map<int, std::list<Message *>> pendings;
 
     std::vector<MessageFrom> delivered; // list of delivered messages (src_id, seq_nr)
     int last_broadcasted_seq_num;       // sequence number of last broadcasted message
 
 private:
-    // add ack from source to message
-    // return true if the message can be delivered
-    bool insert_ack(const MessageFrom &message, int src_id);
+    // deliver all pending messages from a given process, for which the sequence number
+    // are below or equal to the vector clock value associated to that process
+    void deliver_pending(int src_id);
 
-    // determines if a message can be delivered
-    bool can_deliver(const MessageFrom &message);
+    // get pending messages corresponding to process
+    std::list<Message *> &pendings_of_src(int src_id);
 };

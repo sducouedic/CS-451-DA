@@ -5,6 +5,7 @@
 #include <tuple>
 #include <climits>
 #include <cstring>
+#include <iostream>
 #include <sys/socket.h>
 #include <arpa/inet.h>
 
@@ -25,7 +26,7 @@ struct Process
 struct Message
 {
     int src_id = 0;      // Sender of the message
-    int seq_nr = 0;      // Message sequence number
+    int seq_nr = 10;     // Message sequence number
     char *msg = nullptr; // Proper message
 };
 
@@ -71,12 +72,17 @@ protected:
 
         // set seq_nr
         int seq_nr = message.seq_nr;
-        // std::cout << "encode seq nr " << seq_nr << std::endl;
         memcpy(buffer + SRC_ID_SIZE, reinterpret_cast<char *>(&seq_nr), SEQ_SIZE);
 
         // set message
         strncpy(buffer + SEQ_SIZE + SRC_ID_SIZE, message.msg, msg_size);
         buffer[buffer_size - 1] = '\0';
+
+        if (message.seq_nr != 0 and buffer[SRC_ID_SIZE] == 0 and buffer[SRC_ID_SIZE + 1] == 0 and buffer[SRC_ID_SIZE + 2] == 0 and buffer[SRC_ID_SIZE + 3] == 0)
+        {
+            std::cerr << message.seq_nr << " encoding error" << std::endl;
+            exit(EXIT_FAILURE);
+        }
     }
 
     /// Extract a message from a sequence of characters

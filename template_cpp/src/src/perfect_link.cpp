@@ -3,8 +3,6 @@
 //TEMP
 #include <iostream>
 
-#define MSG_SIZE_PL (MSG_SIZE_TCP - SRC_ID_SIZE - SEQ_SIZE)
-
 PerfectLink::PerfectLink(const std::vector<Process> *processes, int id, volatile bool *stop_flag, BroadcastUnit *upper)
     : NetworkUnit(processes, id, stop_flag, upper), pl_seq_nr(0) {}
 
@@ -63,23 +61,19 @@ void PerfectLink::log_state(std::ofstream &file)
 
 void PerfectLink::deliver(int src_id, const Message &network_msg)
 {
+    // extract inner message
+    Message message;
+    message.msg = static_cast<char *>(malloc(MSG_SIZE_PL + 1));
+    extract_message(message, network_msg.msg, MSG_SIZE_PL);
+
     // add the message to the list of delivered messages
-    // TODO remove stop_flag
-    if (!stop_flag)
+    delivered.push_back(MessageFrom(src_id, network_msg.seq_nr));
+
+    if (upper_layer != nullptr)
     {
-        // extract inner message
-        Message message;
-        message.msg = static_cast<char *>(malloc(MSG_SIZE_PL + 1));
-        extract_message(message, network_msg.msg, MSG_SIZE_PL);
-
-        delivered.push_back(MessageFrom(src_id, network_msg.seq_nr));
-
-        if (upper_layer != nullptr)
-        {
-            // TODO
-            // std::cout << "PL delivers (" << src_id << "," << network_msg.seq_nr << ")" << std::endl;
-            upper_layer->receive(src_id, message);
-        }
-        free(message.msg);
+        // TODO
+        // std::cout << "PL delivers (" << message.src_id << "," << message.seq_nr << ")" << std::endl;
+        upper_layer->receive(src_id, message);
     }
+    free(message.msg);
 }

@@ -3,6 +3,7 @@
 #include "perfect_link.hpp"
 #include "best_effort_broadcast.hpp"
 #include "uniform_rel_broadcast.hpp"
+#include "fifo_broadcast.hpp"
 #include <fstream>
 
 /// Broadcast configurations
@@ -33,18 +34,18 @@ public:
         // create perfect link and broadcaster
         PerfectLink *perfect_link = new PerfectLink(&processes, id, &stop_flag);
         // broadcaster = new BestEffortBroadcast(&processes, id, &stop_flag, perfect_link);
-        broadcaster = new UniformRelBroadcast(&processes, id, &stop_flag, perfect_link);
+        // broadcaster = new UniformRelBroadcast(&processes, id, &stop_flag, perfect_link);
+        broadcaster = new FIFOBroadcast(&processes, id, &stop_flag, perfect_link);
 
         // connect to network
         perfect_link->start_networking();
 
-        // TODO msg_size
-        char *msg = static_cast<char *>(malloc(11));
+        char *msg = static_cast<char *>(malloc(MSG_SIZE_FIFO + 1));
         for (int i = 0; i < configs.nb_msgs; ++i)
         {
             // build message
-            // TODO
-            snprintf(msg, 11, "%d", i + 1);
+            snprintf(msg, MSG_SIZE_FIFO, "%d", i + 1);
+            msg[MSG_SIZE_FIFO] = '\0';
             Message message;
             message.src_id = id;
             message.seq_nr = i + 1;
@@ -52,6 +53,7 @@ public:
 
             broadcaster->broadcast(message);
         }
+        free(msg);
     }
 
     /// Log current state in file

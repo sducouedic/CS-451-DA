@@ -8,7 +8,7 @@ class TC:
         self.losses = losses
         self.interface = interface
         self.needSudo = needSudo
-        self.sudoPassword = sudoPassword
+        self.sudoPassword = "koukou"
 
         cmd1 = 'tc qdisc add dev {} root netem 2>/dev/null'.format(self.interface)
         cmd2 = 'tc qdisc change dev {} root netem delay {} {} distribution normal loss {} {} reorder {} {}'.format(self.interface, *self.losses['delay'], *self.losses['loss'], *self.losses['reordering'])
@@ -47,8 +47,8 @@ if __name__ == "__main__":
     # Network configuration using the tc command
     config = {
         'delay': ('200ms', '50ms'),
-        'loss': ('10%', '25%'),
-        'reordering': ('25%', '50%')
+        'loss': ('50%', '70%'),
+        'reordering': ('80%', '100%')
     }
 
     print("Do not have multiple instances of this script executing at the same time!\n")

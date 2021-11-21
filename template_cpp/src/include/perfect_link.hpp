@@ -2,6 +2,8 @@
 
 #include "network_unit.hpp"
 
+#define MSG_SIZE_PL (MSG_SIZE_TCP - SRC_ID_SIZE - SEQ_SIZE)
+
 /// An implementation of a perfect link
 class PerfectLink : public NetworkUnit
 {
