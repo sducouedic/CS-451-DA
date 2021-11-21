@@ -1,0 +1,111 @@
+Source files that end in .c will be compiled automatically with gcc,
+while source files that end in .cpp will be compiled automatically with g++.
+For those that prefer C, they can either use the provided C++
+argument parser and write everything else in C, or delete the
+provided main.cpp and start from scratch.
+Those who have both .c and .cpp files should ensure to have a compatible ABI when calling C functions from C++ (see `hello.h` on how to do this).
+
+My PID: 142418
+From a new terminal type `kill -SIGINT 142418` or `kill -SIGTERM 142418` to stop processing packets
+
+My ID: 1
+
+List of resolved hosts is:
+==========================
+1
+Human-readable IP: 127.0.0.1
+Machine-readable IP: 16777343
+Human-readbale Port: 11001
+Machine-readbale Port: 63786
+
+2
+Human-readable IP: 127.0.0.1
+Machine-readable IP: 16777343
+Human-readbale Port: 11002
+Machine-readbale Port: 64042
+
+
+Path to output:
+===============
+/home/sophie/Documents/EPFL/MA2/DA_CS451/project/example/output/proc01.output
+
+Path to config:
+===============
+../example/output/config
+
+Doing some initialization...
+
+Broadcasting and delivering messages...
+
+URB broadcasts (1,1)
+URB broadcasts (1,2)
+URB broadcasts (1,3)BEB --> delivers (
+1,1), (last sended by: 1)
+BEB --> delivers (1,2), (last sended by: 1)
+BEB --> delivers (1,3), (last sended by: 1)
+URB broadcasts (1,4)
+URB broadcasts (1,5)
+URB broadcasts (1,6)
+URB broadcasts (1,7)
+URB broadcasts (1,8)
+URB broadcasts (1,9)
+BEB --> delivers (1,4), (last sended by: 1)
+URB broadcasts (BEB --> delivers (1,5), (last sended by: 1)
+BEB --> delivers (1,6), (last sended by: 1)
+BEB --> delivers (1,7), (last sended by: 1)
+BEB --> delivers (1,8), (last sended by: 1)
+BEB --> delivers (1,9), (last sended by: 1)
+1,10)
+BEB --> delivers (1,10), (last sended by: 1)
+BEB --> delivers (2,1), (last sended by: 2)
+BEB --> delivers (2,2), (last sended by: 2)
+BEB --> delivers (2,3), (last sended by: 2)
+BEB --> delivers (2,1), (last sended by: 1)
+URB --> delivers (2,1), 
+BEB --> delivers (2,4), (last sended by: 2)
+BEB --> delivers (2,2), (last sended by: 1)
+URB --> delivers (2,2), 
+BEB --> delivers (2,5), (last sended by: 2)
+BEB --> delivers (2,3), (last sended by: 1)
+URB --> delivers (2,3), 
+BEB --> delivers (2,6), (last sended by: 2)
+BEB --> delivers (2,7), (last sended by: 2)
+BEB --> delivers (2,8), (last sended by: 2)
+BEB --> delivers (2,4), (last sended by: 1)
+URB --> delivers (2,4), 
+BEB --> delivers (2,9), (last sended by: 2)
+BEB --> delivers (2,10), (last sended by: 2)
+BEB --> delivers (2,5), (last sended by: 1)
+URB --> delivers (2,5), 
+BEB --> delivers (2,6), (last sended by: 1)
+URB --> delivers (2,6), 
+BEB --> delivers (2,7), (last sended by: 1)
+URB --> delivers (2,7), 
+BEB --> delivers (2,8), (last sended by: 1)
+URB --> delivers (2,8), 
+BEB --> delivers (2,9), (last sended by: 1)
+URB --> delivers (2,9), 
+BEB --> delivers (2,10), (last sended by: 1)
+URB --> delivers (2,10), 
+BEB --> delivers (1,1), (last sended by: 2)
+URB --> delivers (1,1), 
+BEB --> delivers (1,2), (last sended by: 2)
+URB --> delivers (1,2), 
+BEB --> delivers (1,3), (last sended by: 2)
+URB --> delivers (1,3), 
+BEB --> delivers (1,4), (last sended by: 2)
+URB --> delivers (1,4), 
+BEB --> delivers (1,5), (last sended by: 2)
+URB --> delivers (1,5), 
+BEB --> delivers (1,6), (last sended by: 2)
+URB --> delivers (1,6), 
+BEB --> delivers (1,7), (last sended by: 2)
+URB --> delivers (1,7), 
+BEB --> delivers (1,8), (last sended by: 2)
+URB --> delivers (1,8), 
+BEB --> delivers (1,9), (last sended by: 2)
+URB --> delivers (1,9), 
+BEB --> delivers (1,10), (last sended by: 2)
+URB --> delivers (1,10), 
+Immediately stopping network packet processing.
+Writing output.

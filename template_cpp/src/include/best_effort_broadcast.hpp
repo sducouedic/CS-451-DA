@@ -10,6 +10,9 @@ public:
     BestEffortBroadcast(const std::vector<Process> *processes, int id, volatile bool *stop_flag,
                         PerfectLink *perfect_link, BroadcastUnit *upper_layer = nullptr);
 
+    /// Class destructor: default
+    virtual ~BestEffortBroadcast() = default;
+
     /// (@see BroadcastUnit) Broadcast a message
     void broadcast(const Message &message) override;
 
@@ -25,5 +28,4 @@ protected:
 
 private:
     PerfectLink *perfect_link;
-    BroadcastUnit *upper_layer; // upper layer to whom to deliver the message
 };

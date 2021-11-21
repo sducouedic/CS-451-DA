@@ -10,13 +10,17 @@ class NetworkUnit : public BroadcastUnit
 {
 public:
     /// Class Constructor: setup sockaddrs using list of process
-    NetworkUnit(const std::vector<Process> *processes, int id, volatile bool *stop_flag);
+    NetworkUnit(const std::vector<Process> *processes, int id,
+                volatile bool *stop_flag, BroadcastUnit *upper_layer = nullptr);
+
+    /// Class destructor
+    virtual ~NetworkUnit() { delete (tcp); };
 
     /// Start TCP networking
     void start_networking();
 
     /// Send message through the network
-    void network_send(int dest_id, const Message &message);
+    void network_send(int dest_id, const Message &network_msg);
 
     /// get the sockaddr of a process id
     const sockaddr_in *sockaddr_from_id(int id);
@@ -30,8 +34,7 @@ public:
 
 private:
     std::vector<sockaddr_in> sockaddrs; //sockaddrs corresponding to each process
-
-    ApproxTCP *tcp; // lower level to send message
+    ApproxTCP *tcp;                     // lower level to send message
 
 private:
     // initialise sockaddrs

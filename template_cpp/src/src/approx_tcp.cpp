@@ -1,10 +1,11 @@
 #include "approx_tcp.hpp"
 #include "network_unit.hpp"
 
-#include <limits>
+#include <climits>
+#include <cstring>
 
 ApproxTCP::ApproxTCP(const sockaddr_in *host_addr, NetworkUnit *upper_layer)
-    : upper_layer(upper_layer)
+    : upper_layer(upper_layer), tcp_seq_nr(0)
 {
     if (host_addr == nullptr)
     {
@@ -94,15 +95,15 @@ void ApproxTCP::socket_pushing()
     }
 }
 
-void ApproxTCP::socket_send(const sockaddr_in *dest, const Message &message)
+void ApproxTCP::socket_send(const sockaddr_in *dest, const Message &tcp_msg)
 {
     char *buffer = static_cast<char *>(malloc(MAXLINE));
-    build_udp_packet(false, message, buffer);
+    build_udp_packet(false, tcp_msg, buffer);
 
     // build ACK
     ACK *ack = new ACK;
     ack->addr = dest;
-    ack->message.seq_nr = message.seq_nr;
+    ack->message.seq_nr = tcp_msg.seq_nr;
     ack->message.msg = buffer;
 
     // ack already in lacking_acks
@@ -118,14 +119,14 @@ void ApproxTCP::socket_send(const sockaddr_in *dest, const Message &message)
     lacking_acks.push_back(*ack);
 }
 
-void ApproxTCP::socket_receive(const sockaddr_in *src, const Message &message)
+void ApproxTCP::socket_receive(const sockaddr_in *src, const Message &tcp_msg)
 {
     char buffer[MAXLINE];
-    build_udp_packet(true, message, buffer);
+    build_udp_packet(true, tcp_msg, buffer);
     sendto(sockfd, buffer, MAXLINE, 0, reinterpret_cast<const sockaddr *>(src), sizeof(*src));
 
     int id = upper_layer->id_from_sockaddr(src);
-    upper_layer->receive(id, message);
+    upper_layer->receive(id, tcp_msg);
 }
 
 void ApproxTCP::handle_ack(ACK &ack)
@@ -166,27 +167,43 @@ int ApproxTCP::create_bind_socket()
     return sockfd;
 }
 
-void ApproxTCP::build_udp_packet(bool is_ack, const Message &message, char *buffer)
+void ApproxTCP::build_udp_packet(bool is_ack, const Message &tcp_msg, char *buffer)
 {
     // set ack
     buffer[0] = is_ack ? static_cast<char>(1) : static_cast<char>(0);
 
+    // set src_id
+    char src_id = static_cast<char>(tcp_msg.src_id);
+    buffer[ACK_SIZE] = src_id;
+
     // set seq_nr
-    int seq_nr = message.seq_nr;
-    memcpy(buffer + 1, reinterpret_cast<char *>(&seq_nr), sizeof(int));
+    int seq_nr = tcp_msg.seq_nr;
+    memcpy(buffer + ACK_SIZE + SRC_ID_SIZE, reinterpret_cast<char *>(&seq_nr), SEQ_SIZE);
 
     // set message
-    strncpy(buffer + MSG_START, message.msg, MSG_SIZE);
+    strncpy(buffer + MSG_START_TCP, tcp_msg.msg, MSG_SIZE_TCP);
     buffer[MAXLINE - 1] = '\0';
 }
 
-void ApproxTCP::extract_from_udp_packet(bool &is_ack, Message &message, const char *udp_packet)
+void ApproxTCP::extract_from_udp_packet(bool &is_ack, Message &tcp_msg, const char *udp_packet)
 {
+    // extract ack
     is_ack = static_cast<bool>(udp_packet[0]);
-    std::memcpy(&(message.seq_nr), udp_packet + 1, sizeof(int));
 
-    char *msg = static_cast<char *>(malloc(MSG_SIZE + 1));
-    std::strncpy(msg, udp_packet + MSG_START, MSG_SIZE);
-    msg[MSG_SIZE] = '\0';
-    message.msg = msg;
+    // extract src_id
+    int src_id = static_cast<int>(udp_packet[ACK_SIZE]);
+    if (src_id == CHAR_MIN)
+    {
+        src_id = CHAR_MAX + 1;
+    }
+    tcp_msg.src_id = src_id;
+
+    // extract seq_nr
+    memcpy(&(tcp_msg.seq_nr), udp_packet + ACK_SIZE + SRC_ID_SIZE, SEQ_SIZE);
+
+    // extract msg
+    char *msg = static_cast<char *>(malloc(MSG_SIZE_TCP + 1));
+    strncpy(msg, udp_packet + MSG_START_TCP, MSG_SIZE_TCP);
+    msg[MSG_SIZE_TCP] = '\0';
+    tcp_msg.msg = msg;
 }

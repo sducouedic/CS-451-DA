@@ -2,6 +2,7 @@
 
 #include "perfect_link.hpp"
 #include "best_effort_broadcast.hpp"
+#include "uniform_rel_broadcast.hpp"
 #include <fstream>
 
 /// Broadcast configurations
@@ -9,7 +10,7 @@ struct Config
 {
     int nb_msgs; // number of message to send
 
-    // used only for perfect link
+    // used only for perfect link testing
     // int dest_id; // whom to send all those messages
 };
 
@@ -31,19 +32,23 @@ public:
 
         // create perfect link and broadcaster
         PerfectLink *perfect_link = new PerfectLink(&processes, id, &stop_flag);
-        broadcaster = new BestEffortBroadcast(&processes, id, &stop_flag, perfect_link);
+        // broadcaster = new BestEffortBroadcast(&processes, id, &stop_flag, perfect_link);
+        broadcaster = new UniformRelBroadcast(&processes, id, &stop_flag, perfect_link);
 
         // connect to network
         perfect_link->start_networking();
 
-        char *msg = static_cast<char *>(malloc(MSG_SIZE));
+        // TODO msg_size
+        char *msg = static_cast<char *>(malloc(11));
         for (int i = 0; i < configs.nb_msgs; ++i)
         {
             // build message
-            snprintf(msg, MSG_SIZE, "%d", i + 1);
+            // TODO
+            snprintf(msg, 11, "%d", i + 1);
             Message message;
-            message.msg = msg;
+            message.src_id = id;
             message.seq_nr = i + 1;
+            message.msg = msg;
 
             broadcaster->broadcast(message);
         }

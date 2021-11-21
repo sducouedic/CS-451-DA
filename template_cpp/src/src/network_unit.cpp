@@ -1,7 +1,7 @@
 #include "network_unit.hpp"
 
-NetworkUnit::NetworkUnit(const std::vector<Process> *processes, int id, volatile bool *stop_flag)
-    : BroadcastUnit(processes, id, stop_flag)
+NetworkUnit::NetworkUnit(const std::vector<Process> *processes, int id, volatile bool *stop_flag, BroadcastUnit *upper)
+    : BroadcastUnit(processes, id, stop_flag, upper)
 {
     setup_sockaddrs(*processes);
 
@@ -13,9 +13,9 @@ void NetworkUnit::start_networking()
     tcp->start();
 }
 
-void NetworkUnit::network_send(int dest_id, const Message &message)
+void NetworkUnit::network_send(int dest_id, const Message &network_msg)
 {
-    tcp->socket_send(sockaddr_from_id(dest_id), message);
+    tcp->socket_send(sockaddr_from_id(dest_id), network_msg);
 }
 
 const sockaddr_in *NetworkUnit::sockaddr_from_id(int id)

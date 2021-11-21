@@ -3,14 +3,12 @@
 #include "broadcast_unit.hpp"
 
 #include <thread>
-#include <cstring>
 #include <list>
 
-#define MAXLINE 64
 #define ACK_SIZE 1
-#define SEQ_SIZE 4
-#define MSG_START (SEQ_SIZE + ACK_SIZE)
-#define MSG_SIZE (MAXLINE - MSG_START) - 1
+#define MAXLINE 64
+#define MSG_START_TCP (ACK_SIZE + SRC_ID_SIZE + SEQ_SIZE)
+#define MSG_SIZE_TCP (MAXLINE - MSG_START_TCP) - 1
 
 /// Defines an acknowledgement from a host for a msg
 struct ACK
@@ -34,14 +32,17 @@ class ApproxTCP
 {
 
 public:
-    /// Class Constructor: setup socakaddr and upper layer instance
+    /// Class Constructor: setup sockaddr and upper layer instance
     ApproxTCP(const sockaddr_in *host_addr, NetworkUnit *upper_layer = nullptr);
+
+    /// Class destructor: default
+    virtual ~ApproxTCP() = default;
 
     /// starts listenning to socket and sending messages
     void start();
 
     /// send message through the socket
-    void socket_send(const sockaddr_in *dest, const Message &message);
+    void socket_send(const sockaddr_in *dest, const Message &tcp_msg);
 
     /// set the upper layer
     void set_network_unit(NetworkUnit *unit)
@@ -50,13 +51,11 @@ public:
     }
 
 private:
-    const sockaddr_in *addr; // host address
-
-    int sockfd; // socket file descriptor
-
-    NetworkUnit *upper_layer; // network unit to whom to deliver msg
-
+    const sockaddr_in *addr;     // host address
+    int sockfd;                  // socket file descriptor
+    NetworkUnit *upper_layer;    // network unit to whom to deliver msg
     std::list<ACK> lacking_acks; // ACKs we are still waiting for
+    int tcp_seq_nr;
 
 private:
     // listen to socket (either for acks or new msg)
@@ -66,7 +65,7 @@ private:
     void socket_pushing();
 
     // received a message from a host
-    void socket_receive(const sockaddr_in *src, const Message &message);
+    void socket_receive(const sockaddr_in *src, const Message &tcp_msg);
 
     // handling ack from a host for a given msg
     void handle_ack(ACK &ack);
@@ -75,8 +74,8 @@ private:
     int create_bind_socket();
 
     // build udp packet given ack, seq_nr and message
-    void build_udp_packet(bool is_ack, const Message &message, char *buffer);
+    void build_udp_packet(bool is_ack, const Message &tcp_msg, char *buffer);
 
     // extract information from udp packet
-    void extract_from_udp_packet(bool &is_ack, Message &message, const char *udp_packet);
+    void extract_from_udp_packet(bool &is_ack, Message &tcp_msg, const char *udp_packet);
 };

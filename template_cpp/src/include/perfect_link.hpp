@@ -2,29 +2,37 @@
 
 #include "network_unit.hpp"
 
-#include <tuple>
-
 /// An implementation of a perfect link
 class PerfectLink : public NetworkUnit
 {
 public:
     /// Class constructor
-    PerfectLink(const std::vector<Process> *processes, int id, volatile bool *stop_flag);
+    PerfectLink(const std::vector<Process> *processes, int id,
+                volatile bool *stop_flag, BroadcastUnit *upper_layer = nullptr);
+
+    /// Class destructor: default
+    virtual ~PerfectLink() = default;
+
+    /// Set upper layer
+    void set_upper(BroadcastUnit *upper_layer);
 
     /// (@see BroadcastUnit) Send a message to a recipient host
     void send(int dest_id, const Message &message) override;
 
     /// (@see BroadcastUnit) Receive a message from a source host
-    void receive(int src_id, const Message &message) override;
+    void receive(int src_id, const Message &network_msg) override;
 
     /// (@see BroadcastUnit) Write current (frozen) state into output file
     void log_state(std::ofstream &file) override;
 
 protected:
     /// (@see BroadcastUnit) Deliver a message from a source host to the upper layer
-    void deliver(int src_id, const Message &message) override;
+    void deliver(int src_id, const Message &network_msg) override;
 
 private:
-    std::vector<std::pair<int, int>> delivered; // list of delivered messages (src_id, seq_nr)
-    std::vector<int> broadcasted;               // list of broadcasted messages
+    int pl_seq_nr;
+    std::vector<MessageFrom> delivered; // list of delivered messages (src_id, pl_seq_nr)
+
+    // not needed for milesontes 2 and 3
+    // std::vector<int> broadcasted;       // list of broadcasted messages
 };
