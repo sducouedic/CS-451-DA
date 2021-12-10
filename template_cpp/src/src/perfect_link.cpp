@@ -1,6 +1,6 @@
 #include "perfect_link.hpp"
 #include <limits.h>
-//TEMP
+// TEMP
 #include <iostream>
 
 PerfectLink::PerfectLink(const std::vector<Process> *processes, int id, volatile bool *stop_flag, BroadcastUnit *upper)

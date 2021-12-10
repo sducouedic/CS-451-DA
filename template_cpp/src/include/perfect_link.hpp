@@ -35,6 +35,6 @@ private:
     int pl_seq_nr;
     std::vector<MessageFrom> delivered; // list of delivered messages (src_id, pl_seq_nr)
 
-    // not needed for milesontes 2 and 3
+    // not needed for milestones 2 and 3
     // std::vector<int> broadcasted;       // list of broadcasted messages
 };

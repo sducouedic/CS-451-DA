@@ -26,7 +26,7 @@ struct Process
 struct Message
 {
     int src_id = 0;      // Sender of the message
-    int seq_nr = 10;     // Message sequence number
+    int seq_nr = 0;      // Message sequence number
     char *msg = nullptr; // Proper message
 };
 

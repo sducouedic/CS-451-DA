@@ -33,7 +33,7 @@ public:
     const sockaddr_in *sockaddr_local(const sockaddr_in &addr);
 
 private:
-    std::vector<sockaddr_in> sockaddrs; //sockaddrs corresponding to each process
+    std::vector<sockaddr_in> sockaddrs; // sockaddrs corresponding to each process
     ApproxTCP *tcp;                     // lower level to send message
 
 private:

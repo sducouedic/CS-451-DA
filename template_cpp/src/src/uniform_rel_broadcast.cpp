@@ -111,9 +111,8 @@ void UniformRelBroadcast::log_state(std::ofstream &file)
     // {
     //     file << "b " << i << "\n";
     // }
-
-    for (size_t i = 0; i < delivered.size(); ++i)
-    {
-        file << "d " << delivered[i].first << " " << delivered[i].second << "\n";
-    }
+    // for (size_t i = 0; i < delivered.size(); ++i)
+    // {
+    //     file << "d " << delivered[i].first << " " << delivered[i].second << "\n";
+    // }
 }
