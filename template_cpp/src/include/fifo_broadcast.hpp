@@ -1,9 +1,8 @@
 #pragma once
 
 #include "uniform_rel_broadcast.hpp"
+#include "atomic_deque.hpp"
 
-#include <map>
-#include <set>
 #include <vector>
 
 #define MSG_SIZE_FIFO (MSG_SIZE_PL - SRC_ID_SIZE - SEQ_SIZE)
@@ -16,6 +15,7 @@ public:
     FIFOBroadcast(const std::vector<Process> *processes, int id, volatile bool *stop_flag,
                   PerfectLink *perfect_link, BroadcastUnit *upper_layer = nullptr);
 
+    /// Class destructor
     virtual ~FIFOBroadcast() { delete (uniform_rel_broadcast); }
 
     /// (@see BroadcastUnit) Broadcast a message
@@ -37,17 +37,14 @@ protected:
 private:
     UniformRelBroadcast *uniform_rel_broadcast;
 
-    std::map<int, int> vector_clocks;
-    std::map<int, std::list<Message *>> pendings;
+    int vector_clock[MAX_PROCESSES] = {};       // vector clocks
+    std::vector<std::list<Message *>> pendings; // pending messages associated to a source host
 
-    std::vector<MessageFrom> delivered; // list of delivered messages (src_id, seq_nr)
-    int last_broadcasted_seq_num;       // sequence number of last broadcasted message
+    AtomicDeque<Event> events; // list of Events (broadcasts or deliveries)
+    // int last_broadcasted_seq_num; // sequence number of last broadcasted message
 
 private:
     // deliver all pending messages from a given process, for which the sequence number
     // are below or equal to the vector clock value associated to that process
     void deliver_pending(int src_id);
-
-    // get pending messages corresponding to process
-    std::list<Message *> &pendings_of_src(int src_id);
 };

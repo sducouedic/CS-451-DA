@@ -37,4 +37,11 @@ private:
 
     // not needed for milestones 2 and 3
     // std::vector<int> broadcasted;       // list of broadcasted messages
+
+private:
+    /// Encode a message into a sequence of characters
+    static void encode_message_to_chars(const Message &message, char *buffer, int buffer_size);
+
+    /// Extract a message from a sequence of characters
+    static void extract_message_from_chars(Message &message, const char *buffer, int msg_size);
 };

@@ -20,7 +20,7 @@ void PerfectLink::send(int dest_id, const Message &message)
     network_msg.src_id = id;
     network_msg.seq_nr = pl_seq_nr;
     network_msg.msg = static_cast<char *>(malloc(MSG_SIZE_TCP + 1));
-    encode_message(message, network_msg.msg, MSG_SIZE_PL);
+    encode_message_to_chars(message, network_msg.msg, MSG_SIZE_PL);
 
     network_send(dest_id, network_msg);
 
@@ -64,7 +64,7 @@ void PerfectLink::deliver(int src_id, const Message &network_msg)
     // extract inner message
     Message message;
     message.msg = static_cast<char *>(malloc(MSG_SIZE_PL + 1));
-    extract_message(message, network_msg.msg, MSG_SIZE_PL);
+    extract_message_from_chars(message, network_msg.msg, MSG_SIZE_PL);
 
     // add the message to the list of delivered messages
     delivered.push_back(MessageFrom(src_id, network_msg.seq_nr));
@@ -76,4 +76,47 @@ void PerfectLink::deliver(int src_id, const Message &network_msg)
         upper_layer->receive(src_id, message);
     }
     free(message.msg);
+}
+
+void PerfectLink::encode_message_to_chars(const Message &message, char *buffer, int buffer_size)
+{
+    int msg_size = buffer_size - SEQ_SIZE - SRC_ID_SIZE;
+
+    // set src_id
+    char src_id = static_cast<char>(message.src_id);
+    buffer[0] = src_id;
+
+    // set seq_nr
+    int seq_nr = message.seq_nr;
+    memcpy(buffer + SRC_ID_SIZE, reinterpret_cast<char *>(&seq_nr), SEQ_SIZE);
+
+    // set message
+    strncpy(buffer + SEQ_SIZE + SRC_ID_SIZE, message.msg, msg_size);
+    buffer[buffer_size - 1] = '\0';
+
+    if (message.seq_nr != 0 and buffer[SRC_ID_SIZE] == 0 and buffer[SRC_ID_SIZE + 1] == 0 and buffer[SRC_ID_SIZE + 2] == 0 and buffer[SRC_ID_SIZE + 3] == 0)
+    {
+        std::cerr << message.seq_nr << " encoding error" << std::endl;
+        exit(EXIT_FAILURE);
+    }
+}
+
+void PerfectLink::extract_message_from_chars(Message &message, const char *buffer, int msg_size)
+{
+    // extract src_id
+    int src_id = static_cast<int>(buffer[0]);
+    if (src_id == CHAR_MIN)
+    {
+        src_id = CHAR_MAX + 1;
+    }
+    message.src_id = src_id;
+
+    // extract seq_nr
+    memcpy(&(message.seq_nr), buffer + SRC_ID_SIZE, SEQ_SIZE);
+
+    // extract msg
+    char *msg = static_cast<char *>(malloc(msg_size));
+    strncpy(msg, buffer + SRC_ID_SIZE + SEQ_SIZE, msg_size);
+    msg[msg_size - 1] = '\0';
+    message.msg = msg;
 }

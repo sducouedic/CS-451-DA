@@ -3,7 +3,7 @@
 include_directories(include)
 set(SOURCES src/main.cpp src/hello.c src/approx_tcp.cpp src/perfect_link.cpp 
             src/network_unit.cpp src/best_effort_broadcast.cpp src/uniform_rel_broadcast.cpp
-            src/fifo_broadcast.cpp)
+            src/fifo_broadcast.cpp src/local_causal_broadcast.cpp)
 
 # DO NOT EDIT THE FOLLOWING LINE
 find_package(Threads)

@@ -9,17 +9,11 @@ FIFOBroadcast::FIFOBroadcast(const std::vector<Process> *processes, int id,
 {
     uniform_rel_broadcast = new UniformRelBroadcast(processes, id, stop_flag, pl, this);
 
-    // vector_cloacks: associate 0 to all processes
     int nb_processes = static_cast<int>(processes->size());
-    for (int i = 1; i <= nb_processes; ++i)
-    {
-        vector_clocks.insert(std::pair{i, 0});
-    }
-
     // pending: empty list for all the processes
-    for (int i = 1; i <= nb_processes; ++i)
+    for (int i = 0; i < nb_processes; ++i)
     {
-        pendings.insert(std::pair{i, std::list<Message *>(0)});
+        pendings.push_back(std::list<Message *>(0));
     }
 }
 
@@ -27,14 +21,12 @@ void FIFOBroadcast::broadcast(const Message &message)
 {
     if (!stop_flag)
     {
-        // std::cout << "FIFO broadcasts (" << message.src_id << "," << message.seq_nr << ")" << std::endl;
-        if (message.seq_nr <= last_broadcasted_seq_num)
-        {
-            std::cerr << "sequence number must be incremental" << std::endl;
-            exit(EXIT_FAILURE);
-        }
-        last_broadcasted_seq_num = message.seq_nr;
+        std::cout << "FIFO broadcasts (" << message.src_id << "," << message.seq_nr << ")" << std::endl;
         uniform_rel_broadcast->broadcast(message);
+
+        // log the broadcast event
+        Event e = {'b', id, message.seq_nr};
+        events.push(e);
     }
 }
 
@@ -42,7 +34,7 @@ void FIFOBroadcast::send(int dest_id, const Message &message) {}
 
 void FIFOBroadcast::receive(int src_id, const Message &message)
 {
-    // std::cout << "FIFO receives (" << src_id << "," << message.seq_nr << ")" << std::endl;
+    std::cout << "FIFO receives (" << src_id << "," << message.seq_nr << ")" << std::endl;
 
     // Build copy of message
     Message *msg = new Message;
@@ -54,7 +46,7 @@ void FIFOBroadcast::receive(int src_id, const Message &message)
 
     // update pending
     bool updated = false;
-    std::list<Message *> &src_pendings = pendings_of_src(src_id);
+    std::list<Message *> &src_pendings = pendings[src_id - 1];
     if (src_pendings.empty() || msg->seq_nr > src_pendings.back()->seq_nr)
     {
         src_pendings.push_back(msg);
@@ -74,7 +66,7 @@ void FIFOBroadcast::receive(int src_id, const Message &message)
     }
     if (!updated)
     {
-        std::cerr << "was not able to update " << msg->seq_nr << std::endl;
+        std::cerr << "was not able to update pendings" << msg->seq_nr << std::endl;
         exit(EXIT_FAILURE);
     }
 
@@ -84,9 +76,12 @@ void FIFOBroadcast::receive(int src_id, const Message &message)
 
 void FIFOBroadcast::deliver(int src_id, const Message &message)
 {
-    std::cout << "FIFO --> delivers (" << src_id << "," << message.seq_nr << ")" << std::endl;
+    // std::cout << "FIFO --> delivers (" << src_id << "," << message.seq_nr << ")" << std::endl;
 
-    delivered.push_back(MessageFrom(src_id, message.seq_nr));
+    // log the delivery event
+    Event e = {'d', src_id, message.seq_nr};
+    events.push(e);
+
     if (upper_layer != nullptr)
     {
         upper_layer->receive(src_id, message);
@@ -95,14 +90,7 @@ void FIFOBroadcast::deliver(int src_id, const Message &message)
 
 void FIFOBroadcast::deliver_pending(int src_id)
 {
-    auto vc = vector_clocks.find(src_id);
-    if (vc == vector_clocks.end())
-    {
-        std::cerr << "Vector clock must have an entry for each process " << std::endl;
-        exit(EXIT_FAILURE);
-    }
-
-    std::list<Message *> &src_pendings = pendings_of_src(src_id);
+    std::list<Message *> &src_pendings = pendings[src_id - 1];
 
     bool prev_was_delivered = true;
     while (prev_was_delivered)
@@ -113,23 +101,20 @@ void FIFOBroadcast::deliver_pending(int src_id)
             break;
         }
 
-        if (first->seq_nr == vc->second + 1)
+        if (first->seq_nr == vector_clock[src_id - 1] + 1 and !stop_flag)
         {
-            if (!stop_flag)
-            {
-                // remove from pendings
-                src_pendings.pop_front();
+            // remove from pendings
+            src_pendings.pop_front();
 
-                // deliver message
-                deliver(src_id, *first);
+            // deliver message
+            deliver(src_id, *first);
 
-                // free memory
-                free(first->msg);
-                delete (first);
+            // free memory
+            free(first->msg);
+            delete (first);
 
-                // update vc
-                vc->second = vc->second + 1;
-            }
+            // update vector clock
+            vector_clock[src_id - 1] += 1;
         }
         else
         {
@@ -138,41 +123,23 @@ void FIFOBroadcast::deliver_pending(int src_id)
     }
 }
 
-std::list<Message *> &FIFOBroadcast::pendings_of_src(int src_id)
-{
-    auto pendings_tmp = pendings.find(src_id);
-    if (pendings_tmp == pendings.end())
-    {
-        std::cerr << "Pendings must have an entry for each process " << std::endl;
-        exit(EXIT_FAILURE);
-    }
-    return pendings_tmp->second;
-}
-
 void FIFOBroadcast::log_state(std::ofstream &file)
 {
-    // for (size_t i = 1; static_cast<int>(i) <= last_broadcasted_seq_num; ++i)
-    // {
-    //     file << "b " << i << "\n";
-    // }
-
-    for (size_t i = 1; i <= pendings.size(); ++i)
+    while (events.has_next())
     {
-        auto p = pendings_of_src(static_cast<int>(i));
-        std::cout << "process " << i << ":    ";
-        for (auto &j : p)
+        Event e = events.get_next();
+        if (e.type == 'b')
         {
-            std::cout << j->seq_nr << " ";
+            file << "b " << e.seq_nr << "\n";
         }
-        std::cout << std::endl
-                  << std::endl;
+        else if (e.type == 'd')
+        {
+            file << "d " << e.src_id << " " << e.seq_nr << "\n";
+        }
+        else
+        {
+            std::cerr << "Unexptected event log" << std::endl;
+            exit(EXIT_FAILURE);
+        }
     }
-
-    for (size_t i = 0; i < delivered.size(); ++i)
-    {
-        file << "d " << delivered[i].first << " " << delivered[i].second << "\n";
-    }
-
-    file << "\n\n\n\n";
-    uniform_rel_broadcast->log_state(file);
 }
