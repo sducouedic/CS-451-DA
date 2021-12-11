@@ -3,6 +3,9 @@
 // TEMP
 #include <iostream>
 
+// TODO remove
+#define MSG_SIZE_LCB (MSG_SIZE_PL - VECTOR_CLOCK_SIZE)
+
 PerfectLink::PerfectLink(const std::vector<Process> *processes, int id, volatile bool *stop_flag, BroadcastUnit *upper)
     : NetworkUnit(processes, id, stop_flag, upper), pl_seq_nr(0) {}
 
@@ -15,12 +18,27 @@ void PerfectLink::send(int dest_id, const Message &message)
 {
     ++pl_seq_nr;
 
+    // TODO
+    // for (int i = 0; i < MSG_SIZE_LCB + VECTOR_CLOCK_SIZE; ++i)
+    // {
+    //     std::cout << static_cast<int>(message.msg[i]) << " ";
+    // }
+    // std::cout << std::endl;
+
     // build netwok message
     Message network_msg;
     network_msg.src_id = id;
     network_msg.seq_nr = pl_seq_nr;
     network_msg.msg = static_cast<char *>(malloc(MSG_SIZE_TCP + 1));
-    encode_message_to_chars(message, network_msg.msg, MSG_SIZE_PL);
+    encode_message_to_chars(message, network_msg.msg);
+
+    // TODO
+    // for (int i = 0; i < MSG_SIZE_TCP + 1; ++i)
+    // {
+    //     std::cout << static_cast<int>(network_msg.msg[i]) << " ";
+    // }
+    // std::cout << std::endl
+    //           << std::endl;
 
     network_send(dest_id, network_msg);
 
@@ -64,7 +82,7 @@ void PerfectLink::deliver(int src_id, const Message &network_msg)
     // extract inner message
     Message message;
     message.msg = static_cast<char *>(malloc(MSG_SIZE_PL + 1));
-    extract_message_from_chars(message, network_msg.msg, MSG_SIZE_PL);
+    extract_message_from_chars(message, network_msg.msg);
 
     // add the message to the list of delivered messages
     delivered.push_back(MessageFrom(src_id, network_msg.seq_nr));
@@ -78,10 +96,8 @@ void PerfectLink::deliver(int src_id, const Message &network_msg)
     free(message.msg);
 }
 
-void PerfectLink::encode_message_to_chars(const Message &message, char *buffer, int buffer_size)
+void PerfectLink::encode_message_to_chars(const Message &message, char *buffer)
 {
-    int msg_size = buffer_size - SEQ_SIZE - SRC_ID_SIZE;
-
     // set src_id
     char src_id = static_cast<char>(message.src_id);
     buffer[0] = src_id;
@@ -91,8 +107,8 @@ void PerfectLink::encode_message_to_chars(const Message &message, char *buffer, 
     memcpy(buffer + SRC_ID_SIZE, reinterpret_cast<char *>(&seq_nr), SEQ_SIZE);
 
     // set message
-    strncpy(buffer + SEQ_SIZE + SRC_ID_SIZE, message.msg, msg_size);
-    buffer[buffer_size - 1] = '\0';
+    memcpy(buffer + SEQ_SIZE + SRC_ID_SIZE, message.msg, MSG_SIZE_PL);
+    buffer[MSG_SIZE_TCP] = '\0';
 
     if (message.seq_nr != 0 and buffer[SRC_ID_SIZE] == 0 and buffer[SRC_ID_SIZE + 1] == 0 and buffer[SRC_ID_SIZE + 2] == 0 and buffer[SRC_ID_SIZE + 3] == 0)
     {
@@ -101,7 +117,7 @@ void PerfectLink::encode_message_to_chars(const Message &message, char *buffer, 
     }
 }
 
-void PerfectLink::extract_message_from_chars(Message &message, const char *buffer, int msg_size)
+void PerfectLink::extract_message_from_chars(Message &message, const char *buffer)
 {
     // extract src_id
     int src_id = static_cast<int>(buffer[0]);
@@ -115,8 +131,8 @@ void PerfectLink::extract_message_from_chars(Message &message, const char *buffe
     memcpy(&(message.seq_nr), buffer + SRC_ID_SIZE, SEQ_SIZE);
 
     // extract msg
-    char *msg = static_cast<char *>(malloc(msg_size));
-    strncpy(msg, buffer + SRC_ID_SIZE + SEQ_SIZE, msg_size);
-    msg[msg_size - 1] = '\0';
+    char *msg = static_cast<char *>(malloc(MSG_SIZE_PL + 1));
+    memcpy(msg, buffer + SRC_ID_SIZE + SEQ_SIZE, MSG_SIZE_PL);
+    msg[MSG_SIZE_PL] = '\0';
     message.msg = msg;
 }

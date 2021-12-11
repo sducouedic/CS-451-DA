@@ -5,7 +5,7 @@
 
 LocalCausalBroadcast::LocalCausalBroadcast(const std::vector<Process> *processes, int id,
                                            volatile bool *stop_flag, PerfectLink *pl, BroadcastUnit *upper)
-    : BroadcastUnit(processes, id, stop_flag, upper), uniform_rel_broadcast(nullptr)
+    : BroadcastUnit(processes, id, stop_flag, upper), uniform_rel_broadcast(nullptr), vc_broadcasted(0)
 {
     uniform_rel_broadcast = new UniformRelBroadcast(processes, id, stop_flag, pl, this);
 
@@ -14,6 +14,12 @@ LocalCausalBroadcast::LocalCausalBroadcast(const std::vector<Process> *processes
     for (int i = 0; i < nb_processes; ++i)
     {
         pendings.push_back(std::list<LCBMessage *>(0));
+    }
+
+    // fill vector_clock with zeros
+    for (int i = 0; i < MAX_PROCESSES; ++i)
+    {
+        vector_clock[i] = 0;
     }
 }
 
@@ -36,6 +42,9 @@ void LocalCausalBroadcast::broadcast(const Message &message)
         // broadcast
         uniform_rel_broadcast->broadcast(new_msg);
 
+        // update vc_broadcasted
+        ++vc_broadcasted;
+
         // free memory
         free(new_msg.msg);
     }
@@ -54,11 +63,38 @@ void LocalCausalBroadcast::receive(int src_id, const Message &message)
     msg->msg[MSG_SIZE_LCB] = '\0';
     set_message_vector_clock(*msg, message.msg);
 
+    // TODO
+    // std::cout << "receives (" << msg->src_id << "," << msg->seq_nr << ")";
+    // std::cout << ", vc = [";
+    // for (size_t i = 0; i < processes.size(); ++i)
+    // {
+    //     std::cout << msg->vector_clocks[i] << ",";
+    // }
+    // std::cout << "]" << std::endl;
+
     // update pending
     bool updated = false;
+
+    // TODO
+    // std::cout << "pendings: (";
     std::list<LCBMessage *> &src_pendings = pendings[src_id - 1];
+
+    // TODO
+    // for (auto &m : src_pendings)
+    // {
+    //     std::cout << m->seq_nr << ": [";
+    //     for (size_t i = 0; i < processes.size(); ++i)
+    //     {
+    //         std::cout << m->vector_clocks[i] << ",";
+    //     }
+    //     std::cout << "] ";
+    // }
+    // std::cout << ")" << std::endl;
+
     if (src_pendings.empty() || msg->vector_clocks[src_id - 1] > src_pendings.back()->vector_clocks[src_id - 1])
     {
+        // TODO
+        // std::cout << "--> to the back" << std::endl;
         src_pendings.push_back(msg);
         updated = true;
     }
@@ -68,12 +104,16 @@ void LocalCausalBroadcast::receive(int src_id, const Message &message)
         {
             if (msg->vector_clocks[src_id - 1] < (*it)->vector_clocks[src_id - 1])
             {
+                // TODO
+                // std::cout << "--> inserted before " << (*it)->seq_nr << std::endl;
                 src_pendings.insert(it, msg);
                 updated = true;
                 break;
             }
         }
     }
+    // TODO
+    // std::cout << std::endl;
     if (!updated)
     {
         std::cerr << "was not able to update " << msg->seq_nr << std::endl;
@@ -173,9 +213,20 @@ void LocalCausalBroadcast::append_vector_clock(Message &message, const char *msg
         memcpy(buffer + i * sizeof(int), reinterpret_cast<char *>(&vector_clock[i]), sizeof(int));
     }
 
+    // for current process we need to use vc_broadcasted instead
+    memcpy(buffer + (id - 1) * sizeof(int), reinterpret_cast<char *>(&vc_broadcasted), sizeof(int));
+
     strncpy(buffer + VECTOR_CLOCK_SIZE, msg, MSG_SIZE_LCB);
     buffer[VECTOR_CLOCK_SIZE + MSG_SIZE_LCB] = '\0';
     message.msg = buffer;
+
+    // TODO
+    // for (int i = 0; i < VECTOR_CLOCK_SIZE + MSG_SIZE_LCB; ++i)
+    // {
+    //     std::cout << static_cast<int>(buffer[i]) << " ";
+    // }
+    // std::cout << std::endl
+    //           << std::endl;
 }
 
 void LocalCausalBroadcast::set_message_vector_clock(LCBMessage &lcb_message, const char *buffer)
@@ -184,4 +235,12 @@ void LocalCausalBroadcast::set_message_vector_clock(LCBMessage &lcb_message, con
     {
         memcpy(&(lcb_message.vector_clocks[i]), buffer + i * sizeof(int), sizeof(int));
     }
+
+    // TODO
+    // for (int i = 0; i < VECTOR_CLOCK_SIZE + MSG_SIZE_LCB; ++i)
+    // {
+    //     std::cout << static_cast<int>(buffer[i]) << " ";
+    // }
+    // std::cout << std::endl
+    //           << std::endl;
 }

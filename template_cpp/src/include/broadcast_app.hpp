@@ -58,8 +58,28 @@ public:
         // }
         // free(msg);
 
+        // FIFO
+        char *msg = static_cast<char *>(malloc(MSG_SIZE_FIFO + 1));
+        for (int i = 0; i < configs.nb_msgs; ++i)
+        {
+
+            // build message
+            snprintf(msg, MSG_SIZE_FIFO, "%d", i + 1);
+            msg[MSG_SIZE_FIFO] = '\0';
+            Message message;
+            message.src_id = id;
+            message.seq_nr = i + 1;
+            message.msg = msg;
+
+            broadcaster->broadcast(message);
+        }
+        free(msg);
+
         // LCB
-        // sleep(5);
+        // if (id == 2)
+        // {
+        //     sleep(5);
+        // }
         // char *msg = static_cast<char *>(malloc(MSG_SIZE_LCB + 1));
         // for (int i = 0; i < 5; ++i)
         // {
@@ -97,45 +117,45 @@ public:
         // free(msg);
 
         // FIFO
-        if (id == 2)
-        {
-            sleep(5);
-        }
-        char *msg = static_cast<char *>(malloc(MSG_SIZE_FIFO + 1));
-        for (int i = 0; i < 5; ++i)
-        {
-            if (id == 3)
-            {
-                break;
-            }
-            // build message
-            snprintf(msg, MSG_SIZE_LCB, "%d", i + 1);
-            msg[MSG_SIZE_LCB] = '\0';
-            Message message;
-            message.src_id = id;
-            message.seq_nr = i + 1;
-            message.msg = msg;
+        // if (id == 2)
+        // {
+        //     sleep(5);
+        // }
+        // char *msg = static_cast<char *>(malloc(MSG_SIZE_FIFO + 1));
+        // for (int i = 0; i < 5; ++i)
+        // {
+        //     if (id == 3)
+        //     {
+        //         break;
+        //     }
+        //     // build message
+        //     snprintf(msg, MSG_SIZE_LCB, "%d", i + 1);
+        //     msg[MSG_SIZE_LCB] = '\0';
+        //     Message message;
+        //     message.src_id = id;
+        //     message.seq_nr = i + 1;
+        //     message.msg = msg;
 
-            broadcaster->broadcast(message);
-        }
-        sleep(15);
-        for (int i = 5; i < configs.nb_msgs; ++i)
-        {
-            if (id == 3)
-            {
-                break;
-            }
-            // build message
-            snprintf(msg, MSG_SIZE_FIFO, "%d", i + 1);
-            msg[MSG_SIZE_FIFO] = '\0';
-            Message message;
-            message.src_id = id;
-            message.seq_nr = i + 1;
-            message.msg = msg;
+        //     broadcaster->broadcast(message);
+        // }
+        // sleep(15);
+        // for (int i = 5; i < configs.nb_msgs; ++i)
+        // {
+        //     if (id == 3)
+        //     {
+        //         break;
+        //     }
+        //     // build message
+        //     snprintf(msg, MSG_SIZE_FIFO, "%d", i + 1);
+        //     msg[MSG_SIZE_FIFO] = '\0';
+        //     Message message;
+        //     message.src_id = id;
+        //     message.seq_nr = i + 1;
+        //     message.msg = msg;
 
-            broadcaster->broadcast(message);
-        }
-        free(msg);
+        //     broadcaster->broadcast(message);
+        // }
+        // free(msg);
     }
 
     /// Log current state in file

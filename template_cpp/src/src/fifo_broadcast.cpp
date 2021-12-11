@@ -34,7 +34,7 @@ void FIFOBroadcast::send(int dest_id, const Message &message) {}
 
 void FIFOBroadcast::receive(int src_id, const Message &message)
 {
-    std::cout << "FIFO receives (" << src_id << "," << message.seq_nr << ")" << std::endl;
+    // std::cout << "FIFO receives (" << src_id << "," << message.seq_nr << ")" << std::endl;
 
     // Build copy of message
     Message *msg = new Message;
@@ -76,7 +76,7 @@ void FIFOBroadcast::receive(int src_id, const Message &message)
 
 void FIFOBroadcast::deliver(int src_id, const Message &message)
 {
-    // std::cout << "FIFO --> delivers (" << src_id << "," << message.seq_nr << ")" << std::endl;
+    std::cout << "FIFO --> delivers (" << src_id << "," << message.seq_nr << ")" << std::endl;
 
     // log the delivery event
     Event e = {'d', src_id, message.seq_nr};

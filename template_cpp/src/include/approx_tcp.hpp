@@ -6,7 +6,8 @@
 #include <list>
 
 #define ACK_SIZE 1
-#define MAXLINE 576
+#define MAXLINE 577
+#define MAX_MESSAGES_IN_PACKET 7
 #define MSG_START_TCP (ACK_SIZE + SRC_ID_SIZE + SEQ_SIZE)
 #define MSG_SIZE_TCP (MAXLINE - MSG_START_TCP) - 1
 

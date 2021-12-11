@@ -3,9 +3,11 @@
 #include "uniform_rel_broadcast.hpp"
 #include "atomic_deque.hpp"
 
+#include <atomic>
 #include <vector>
+#include <array>
 
-#define MSG_SIZE_LCB (MSG_SIZE_PL - SRC_ID_SIZE - SEQ_SIZE - VECTOR_CLOCK_SIZE)
+#define MSG_SIZE_LCB (MSG_SIZE_PL - VECTOR_CLOCK_SIZE)
 
 /// Local Causal broadcast add the vector clock to the message
 struct LCBMessage : Message
@@ -46,8 +48,9 @@ protected:
 private:
     UniformRelBroadcast *uniform_rel_broadcast;
 
-    int vector_clock[MAX_PROCESSES] = {};          // vector clocks
-    std::vector<std::list<LCBMessage *>> pendings; // pending messages associated to a source host
+    int vc_broadcasted;
+    std::array<std::atomic<int>, MAX_PROCESSES> vector_clock; // vector clocks
+    std::vector<std::list<LCBMessage *>> pendings;            // pending messages associated to a source host
 
     AtomicDeque<Event> events; // list of Events (broadcasts or deliveries)
 

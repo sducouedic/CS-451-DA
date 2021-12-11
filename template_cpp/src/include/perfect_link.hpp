@@ -40,8 +40,8 @@ private:
 
 private:
     /// Encode a message into a sequence of characters
-    static void encode_message_to_chars(const Message &message, char *buffer, int buffer_size);
+    static void encode_message_to_chars(const Message &message, char *buffer);
 
     /// Extract a message from a sequence of characters
-    static void extract_message_from_chars(Message &message, const char *buffer, int msg_size);
+    static void extract_message_from_chars(Message &message, const char *buffer);
 };

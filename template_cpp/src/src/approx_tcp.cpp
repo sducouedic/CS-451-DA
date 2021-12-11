@@ -182,7 +182,7 @@ void ApproxTCP::build_udp_packet(bool is_ack, const Message &tcp_msg, char *buff
     memcpy(buffer + ACK_SIZE + SRC_ID_SIZE, reinterpret_cast<char *>(&seq_nr), SEQ_SIZE);
 
     // set message
-    strncpy(buffer + MSG_START_TCP, tcp_msg.msg, MSG_SIZE_TCP);
+    memcpy(buffer + MSG_START_TCP, tcp_msg.msg, MSG_SIZE_TCP);
     buffer[MAXLINE - 1] = '\0';
 }
 
@@ -204,7 +204,7 @@ void ApproxTCP::extract_from_udp_packet(bool &is_ack, Message &tcp_msg, const ch
 
     // extract msg
     char *msg = static_cast<char *>(malloc(MSG_SIZE_TCP + 1));
-    strncpy(msg, udp_packet + MSG_START_TCP, MSG_SIZE_TCP);
+    memcpy(msg, udp_packet + MSG_START_TCP, MSG_SIZE_TCP);
     msg[MSG_SIZE_TCP] = '\0';
     tcp_msg.msg = msg;
 }
