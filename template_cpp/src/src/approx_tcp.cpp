@@ -62,12 +62,11 @@ void ApproxTCP::socket_polling()
         // build message
         bool is_ack;
         Message message;
-        message.msg = static_cast<char *>(malloc(MSG_SIZE_TCP + 1));
         extract_from_udp_packet(is_ack, message, buffer);
-
         if (is_ack)
         {
             ACK ack;
+            ack.sin_port = src_addr->sin_port;
             ack.message.seq_nr = message.seq_nr;
             ack.message.msg = nullptr;
             handle_ack(ack);
@@ -79,6 +78,7 @@ void ApproxTCP::socket_polling()
 
         // free the message
         free(message.msg);
+        message.msg = nullptr;
     }
 
     // free memory
@@ -101,12 +101,14 @@ void ApproxTCP::socket_pushing()
 
 void ApproxTCP::socket_send(const sockaddr_in *dest, const Message &tcp_msg)
 {
+
     char *buffer = static_cast<char *>(malloc(MAXLINE));
     build_udp_packet(false, tcp_msg, buffer);
 
     // build ACK
     ACK ack;
     ack.addr = dest;
+    ack.sin_port = dest->sin_port;
     ack.message.seq_nr = tcp_msg.seq_nr;
     ack.message.msg = buffer;
 
@@ -114,13 +116,19 @@ void ApproxTCP::socket_send(const sockaddr_in *dest, const Message &tcp_msg)
     for (auto &a : lacking_acks)
     {
         if (a.isEqual(ack))
+        {
+            free(ack.message.msg);
             return;
+        }
     }
 
     sendto(sockfd, buffer, MAXLINE, 0, reinterpret_cast<const sockaddr *>(dest), sizeof(*dest));
 
-    // add new ack in lacking_acks
-    lacking_acks.push_back(ack);
+    // add ack to main_thread_acks
+    main_thread_acks.push_back(ack);
+
+    // ensure previous messages were not crushed (concurrency)
+    check_sent_messages();
 }
 
 void ApproxTCP::socket_receive(const sockaddr_in *src, const Message &tcp_msg)
@@ -142,6 +150,7 @@ void ApproxTCP::handle_ack(ACK &ack)
         if (it->isEqual(ack))
         {
             free(it->message.msg);
+            it->message.msg = nullptr;
             it = lacking_acks.erase(it);
         }
         else
@@ -149,6 +158,9 @@ void ApproxTCP::handle_ack(ACK &ack)
             ++it;
         }
     }
+
+    // add it to received_acks
+    received_acks.push_back(ack);
 }
 
 int ApproxTCP::create_bind_socket()
@@ -210,4 +222,71 @@ void ApproxTCP::extract_from_udp_packet(bool &is_ack, Message &tcp_msg, const ch
     memcpy(msg, udp_packet + MSG_START_TCP, MSG_SIZE_TCP);
     msg[MSG_SIZE_TCP] = '\0';
     tcp_msg.msg = msg;
+}
+
+void ApproxTCP::check_sent_messages()
+{
+    std::cout << "size main " << main_thread_acks.size() << std::flush;
+    auto main = main_thread_acks.begin();
+    auto ack = received_acks.begin();
+    bool deleted = false;
+
+    std::cout << ", rec " << received_acks.size() << std::flush;
+
+    // iterate over messages to be sent
+    while (main != main_thread_acks.end())
+    {
+        deleted = false;
+        ack = received_acks.begin();
+
+        // iterate over acknowledged messages
+        while (ack != received_acks.end())
+        {
+            // delete message if acknowledged
+            if (main->isEqual(*ack))
+            {
+                // free memory
+                free(main->message.msg);
+                main = main_thread_acks.erase(main);
+                deleted = true;
+                break;
+            }
+            ++ack;
+        }
+
+        // increment pointer
+        if (!deleted)
+        {
+            ++main;
+        }
+    }
+
+    // for the remaining ones: add them "again" to lacking_acks
+    for (auto &main : main_thread_acks)
+    {
+        bool already_in = false;
+
+        // check if already in lacking_acks
+        for (auto &lack : lacking_acks)
+        {
+            if (main.isEqual(lack))
+            {
+                already_in = true;
+                break;
+            }
+        }
+        if (!already_in)
+        {
+            ACK tmp = main;
+            tmp.message.msg = static_cast<char *>(malloc(MAXLINE));
+            memcpy(tmp.message.msg, main.message.msg, MAXLINE);
+            lacking_acks.push_back(tmp);
+        }
+    }
+
+    // clear received_acks
+    received_acks.clear();
+
+    std::cout << ", lacking " << lacking_acks.size() << std::endl
+              << std::flush;
 }

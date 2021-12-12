@@ -14,12 +14,13 @@
 struct ACK
 {
     const sockaddr_in *addr = nullptr; // host that acknowledged
-    Message message;                   // acknowledged message
+    in_port_t sin_port = 0;
+    Message message; // acknowledged message
 
     // two acknowledgments are the same if same host and seq_nr
     bool isEqual(const ACK &a) const
     {
-        return a.addr == addr && a.message.seq_nr == message.seq_nr;
+        return a.sin_port == sin_port && a.message.seq_nr == message.seq_nr;
     }
 };
 
@@ -82,4 +83,7 @@ private:
 
     // extract information from udp packet
     void extract_from_udp_packet(bool &is_ack, Message &tcp_msg, const char *udp_packet);
+
+    // ensure that all messages to be sent were taken into account (concurrency)
+    void check_sent_messages();
 };

@@ -47,7 +47,6 @@ public:
         char *msg = static_cast<char *>(malloc(MSG_SIZE_LCB + 1));
         for (int i = 0; i < configs.nb_msgs; ++i)
         {
-
             // build message
             snprintf(msg, MSG_SIZE_LCB, "%d", i + 1);
             msg[MSG_SIZE_LCB] = '\0';
