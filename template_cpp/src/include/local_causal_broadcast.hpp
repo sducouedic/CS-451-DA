@@ -12,7 +12,7 @@
 /// Local Causal broadcast add the vector clock to the message
 struct LCBMessage : Message
 {
-    int vector_clocks[MAX_PROCESSES] = {}; // vector clocks
+    int vector_clock[MAX_PROCESSES] = {}; // vector clocks
 };
 
 /// An implementation of localized causal broadcast
@@ -20,7 +20,8 @@ class LocalCausalBroadcast : public BroadcastUnit
 {
 public:
     /// Class constructor
-    LocalCausalBroadcast(const std::vector<Process> *processes, int id, volatile bool *stop_flag,
+    LocalCausalBroadcast(const std::vector<Process> *processes, int id,
+                         const std::vector<int> *affecting_processes, volatile bool *stop_flag,
                          PerfectLink *perfect_link, BroadcastUnit *upper_layer = nullptr);
 
     /// Class destructor
@@ -50,7 +51,9 @@ private:
 
     int vc_broadcasted;
     std::array<std::atomic<int>, MAX_PROCESSES> vector_clock; // vector clocks
-    std::vector<std::list<LCBMessage *>> pendings;            // pending messages associated to a source host
+    const std::vector<int> &affecting_processes;              // other processes current process is affected by
+
+    std::vector<std::list<LCBMessage *>> pendings; // pending messages associated to a source host
 
     AtomicDeque<Event> events; // list of Events (broadcasts or deliveries)
 

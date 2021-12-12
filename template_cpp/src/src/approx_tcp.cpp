@@ -86,7 +86,7 @@ void ApproxTCP::socket_pushing()
 {
     while (true)
     {
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
         for (auto &ack : lacking_acks)
         {
             char *msg = ack.message.msg;

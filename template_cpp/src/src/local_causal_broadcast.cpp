@@ -4,8 +4,10 @@
 #include <iostream>
 
 LocalCausalBroadcast::LocalCausalBroadcast(const std::vector<Process> *processes, int id,
-                                           volatile bool *stop_flag, PerfectLink *pl, BroadcastUnit *upper)
-    : BroadcastUnit(processes, id, stop_flag, upper), uniform_rel_broadcast(nullptr), vc_broadcasted(0)
+                                           const std::vector<int> *affecting_processes, volatile bool *stop_flag,
+                                           PerfectLink *pl, BroadcastUnit *upper)
+    : BroadcastUnit(processes, id, stop_flag, upper), uniform_rel_broadcast(nullptr), vc_broadcasted(0),
+      affecting_processes(*affecting_processes)
 {
     uniform_rel_broadcast = new UniformRelBroadcast(processes, id, stop_flag, pl, this);
 
@@ -68,7 +70,7 @@ void LocalCausalBroadcast::receive(int src_id, const Message &message)
     // std::cout << ", vc = [";
     // for (size_t i = 0; i < processes.size(); ++i)
     // {
-    //     std::cout << msg->vector_clocks[i] << ",";
+    //     std::cout << msg->vector_clock[i] << ",";
     // }
     // std::cout << "]" << std::endl;
 
@@ -85,13 +87,13 @@ void LocalCausalBroadcast::receive(int src_id, const Message &message)
     //     std::cout << m->seq_nr << ": [";
     //     for (size_t i = 0; i < processes.size(); ++i)
     //     {
-    //         std::cout << m->vector_clocks[i] << ",";
+    //         std::cout << m->vector_clock[i] << ",";
     //     }
     //     std::cout << "] ";
     // }
     // std::cout << ")" << std::endl;
 
-    if (src_pendings.empty() || msg->vector_clocks[src_id - 1] > src_pendings.back()->vector_clocks[src_id - 1])
+    if (src_pendings.empty() || msg->vector_clock[src_id - 1] > src_pendings.back()->vector_clock[src_id - 1])
     {
         // TODO
         // std::cout << "--> to the back" << std::endl;
@@ -102,7 +104,7 @@ void LocalCausalBroadcast::receive(int src_id, const Message &message)
     {
         for (auto it = src_pendings.begin(); it != src_pendings.end(); ++it)
         {
-            if (msg->vector_clocks[src_id - 1] < (*it)->vector_clocks[src_id - 1])
+            if (msg->vector_clock[src_id - 1] < (*it)->vector_clock[src_id - 1])
             {
                 // TODO
                 // std::cout << "--> inserted before " << (*it)->seq_nr << std::endl;
@@ -127,6 +129,7 @@ void LocalCausalBroadcast::receive(int src_id, const Message &message)
 void LocalCausalBroadcast::deliver(int src_id, const Message &message)
 {
     std::cout << "LCB --> delivers (" << src_id << "," << message.seq_nr << ")" << std::endl;
+    // std::cout << "LCB --> delivers (" << src_id << "," << message.seq_nr << ")";
 
     // log the delivery event
     Event e = {'d', src_id, message.seq_nr};
@@ -140,45 +143,73 @@ void LocalCausalBroadcast::deliver(int src_id, const Message &message)
 
 void LocalCausalBroadcast::deliver_pending()
 {
-    for (auto &src_pendings : pendings)
+    bool at_least_one_delivered = true;
+    while (at_least_one_delivered)
     {
-        bool prev_was_delivered = true;
-        while (prev_was_delivered)
+        at_least_one_delivered = false;
+        for (auto &src_pendings : pendings)
         {
-            LCBMessage *first = *(src_pendings.begin());
-            if (first == nullptr)
+            bool prev_was_delivered = true;
+            while (prev_was_delivered)
             {
-                break;
-            }
-
-            bool is_all_higher = true;
-            for (int i = 0; i < MAX_PROCESSES; ++i)
-            {
-                if (vector_clock[i] < first->vector_clocks[i])
+                LCBMessage *first = *(src_pendings.begin());
+                if (first == nullptr)
                 {
-                    is_all_higher = false;
                     break;
                 }
-            }
 
-            if (is_all_higher and !stop_flag)
-            {
-                // remove from pendings
-                src_pendings.pop_front();
+                bool is_all_higher = true;
+                for (int i = 0; i < MAX_PROCESSES; ++i)
+                {
+                    if (vector_clock[i] < first->vector_clock[i])
+                    {
+                        // TODO
+                        // std::cout << "first higher for src " << first->src_id << " = "
+                        //           << first->seq_nr << ": [";
+                        // for (size_t i = 0; i < processes.size(); i++)
+                        // {
+                        //     std::cout << first->vector_clock[i] << ",";
+                        // }
+                        // std::cout << "] (current vector clock = [";
+                        // for (size_t i = 0; i < processes.size(); i++)
+                        // {
+                        //     std::cout << vector_clock[i] << ",";
+                        // }
+                        // std::cout << "]" << std::endl;
 
-                // deliver message
-                deliver(first->src_id, *first);
+                        is_all_higher = false;
+                        break;
+                    }
+                }
 
-                // update vector clock
-                ++vector_clock[first->src_id - 1];
+                if (is_all_higher and !stop_flag)
+                {
+                    at_least_one_delivered = true;
 
-                // free memory
-                free(first->msg);
-                delete (first);
-            }
-            else
-            {
-                prev_was_delivered = false;
+                    // remove from pendings
+                    src_pendings.pop_front();
+
+                    // deliver message
+                    deliver(first->src_id, *first);
+
+                    // update vector clock
+                    ++vector_clock[first->src_id - 1];
+
+                    // std::cout << ", current vc = [";
+                    // for (int i = 0; i < static_cast<int>(processes.size()); ++i)
+                    // {
+                    //     std::cout << vector_clock[i] << ",";
+                    // }
+                    // std::cout << "]" << std::endl;
+
+                    // free memory
+                    free(first->msg);
+                    delete (first);
+                }
+                else
+                {
+                    prev_was_delivered = false;
+                }
             }
         }
     }
@@ -208,9 +239,18 @@ void LocalCausalBroadcast::log_state(std::ofstream &file)
 void LocalCausalBroadcast::append_vector_clock(Message &message, const char *msg)
 {
     char *buffer = static_cast<char *>(malloc(VECTOR_CLOCK_SIZE + MSG_SIZE_LCB + 1));
+
+    // set zero for all process
+    int zero = 0;
     for (int i = 0; i < MAX_PROCESSES; ++i)
     {
-        memcpy(buffer + i * sizeof(int), reinterpret_cast<char *>(&vector_clock[i]), sizeof(int));
+        memcpy(buffer + i * sizeof(int), reinterpret_cast<char *>(&zero), sizeof(int));
+    }
+
+    // set value of vector clock for affecting processes
+    for (auto &p_id : affecting_processes)
+    {
+        memcpy(buffer + (p_id - 1) * sizeof(int), reinterpret_cast<char *>(&vector_clock[p_id - 1]), sizeof(int));
     }
 
     // for current process we need to use vc_broadcasted instead
@@ -233,7 +273,7 @@ void LocalCausalBroadcast::set_message_vector_clock(LCBMessage &lcb_message, con
 {
     for (int i = 0; i < MAX_PROCESSES; ++i)
     {
-        memcpy(&(lcb_message.vector_clocks[i]), buffer + i * sizeof(int), sizeof(int));
+        memcpy(&(lcb_message.vector_clock[i]), buffer + i * sizeof(int), sizeof(int));
     }
 
     // TODO

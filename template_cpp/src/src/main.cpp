@@ -87,11 +87,15 @@ int main(int argc, char **argv)
   }
 
   int nb_msg = 0, dest_id = 0, loc_id = 0;
-  parser.confs(nb_msg, dest_id);
+  std::vector<std::vector<int>> affecting_processes;
+  parser.confs(nb_msg, dest_id, affecting_processes);
+  loc_id = static_cast<int>(parser.id());
+
   Config confs;
   confs.nb_msgs = nb_msg;
+  confs.affecting_processes = affecting_processes[loc_id - 1];
+
   // confs.dest_id = dest_id; //needed for perfect link
-  loc_id = static_cast<int>(parser.id());
 
   broadcast_app = new BroadcastApp(confs, processes, loc_id, parser.outputPath());
 

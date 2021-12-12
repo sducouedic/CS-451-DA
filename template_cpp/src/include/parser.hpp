@@ -146,7 +146,7 @@ public:
     return configPath_.c_str();
   }
 
-  void confs(int &nb_msg, int &dest_id)
+  void confs(int &nb_msg, int &dest_id, std::vector<std::vector<int>> &affecting_processes)
   {
     std::ifstream confile(configPath());
     if (!confile.is_open())
@@ -156,18 +156,39 @@ public:
       throw std::invalid_argument(os.str());
     }
 
+    // first line is the number of messages
     std::string line;
-    int lineNum = 0;
     if (std::getline(confile, line))
     {
       std::istringstream iss(line);
-      // if (!(iss >> nb_msg >> dest_id)) // was for perfectlink
       if (!(iss >> nb_msg))
       {
         std::ostringstream os;
         os << "Parsing for `" << configPath() << "` failed ";
         throw std::invalid_argument(os.str());
       }
+    }
+
+    // read affecting_processes
+    affecting_processes.clear();
+    int process_id = 0;
+    int dep = 0;
+    while (std::getline(confile, line))
+    {
+      std::istringstream iss(line);
+      if (!(iss >> process_id))
+      {
+        std::ostringstream os;
+        os << "Parsing for `" << configPath() << "` failed ";
+        throw std::invalid_argument(os.str());
+      }
+
+      std::vector<int> process_dep;
+      while (iss >> dep)
+      {
+        process_dep.push_back(dep);
+      }
+      affecting_processes.push_back(process_dep);
     }
   }
 

@@ -10,7 +10,8 @@
 /// Broadcast configurations
 struct Config
 {
-    int nb_msgs; // number of message to send
+    int nb_msgs;                          // number of message to send
+    std::vector<int> affecting_processes; // processes the current process is affected to
 
     // used only for perfect link testing
     // int dest_id; // whom to send all those messages
@@ -36,36 +37,20 @@ public:
         PerfectLink *perfect_link = new PerfectLink(&processes, id, &stop_flag);
         // broadcaster = new BestEffortBroadcast(&processes, id, &stop_flag, perfect_link);
         // broadcaster = new UniformRelBroadcast(&processes, id, &stop_flag, perfect_link);
-        broadcaster = new FIFOBroadcast(&processes, id, &stop_flag, perfect_link);
-        // broadcaster = new LocalCausalBroadcast(&processes, id, &stop_flag, perfect_link);
+        // broadcaster = new FIFOBroadcast(&processes, id, &stop_flag, perfect_link);
+        broadcaster = new LocalCausalBroadcast(&processes, id, &configs.affecting_processes, &stop_flag, perfect_link);
 
         // connect to network
         perfect_link->start_networking();
 
-        // char *msg = static_cast<char *>(malloc(MSG_SIZE_LCB + 1));
-        // for (int i = 0; i < configs.nb_msgs; ++i)
-        // {
-
-        //     // build message
-        //     snprintf(msg, MSG_SIZE_LCB, "%d", i + 1);
-        //     msg[MSG_SIZE_LCB] = '\0';
-        //     Message message;
-        //     message.src_id = id;
-        //     message.seq_nr = i + 1;
-        //     message.msg = msg;
-
-        //     broadcaster->broadcast(message);
-        // }
-        // free(msg);
-
-        // FIFO
-        char *msg = static_cast<char *>(malloc(MSG_SIZE_FIFO + 1));
+        // LCB
+        char *msg = static_cast<char *>(malloc(MSG_SIZE_LCB + 1));
         for (int i = 0; i < configs.nb_msgs; ++i)
         {
 
             // build message
-            snprintf(msg, MSG_SIZE_FIFO, "%d", i + 1);
-            msg[MSG_SIZE_FIFO] = '\0';
+            snprintf(msg, MSG_SIZE_LCB, "%d", i + 1);
+            msg[MSG_SIZE_LCB] = '\0';
             Message message;
             message.src_id = id;
             message.seq_nr = i + 1;
@@ -74,6 +59,23 @@ public:
             broadcaster->broadcast(message);
         }
         free(msg);
+
+        // FIFO
+        // char *msg = static_cast<char *>(malloc(MSG_SIZE_FIFO + 1));
+        // for (int i = 0; i < configs.nb_msgs; ++i)
+        // {
+
+        //     // build message
+        //     snprintf(msg, MSG_SIZE_FIFO, "%d", i + 1);
+        //     msg[MSG_SIZE_FIFO] = '\0';
+        //     Message message;
+        //     message.src_id = id;
+        //     message.seq_nr = i + 1;
+        //     message.msg = msg;
+
+        //     broadcaster->broadcast(message);
+        // }
+        // free(msg);
 
         // LCB
         // if (id == 2)
