@@ -18,27 +18,12 @@ void PerfectLink::send(int dest_id, const Message &message)
 {
     ++pl_seq_nr;
 
-    // TODO
-    // for (int i = 0; i < MSG_SIZE_LCB + VECTOR_CLOCK_SIZE; ++i)
-    // {
-    //     std::cout << static_cast<int>(message.msg[i]) << " ";
-    // }
-    // std::cout << std::endl;
-
     // build netwok message
     Message network_msg;
     network_msg.src_id = id;
     network_msg.seq_nr = pl_seq_nr;
     network_msg.msg = static_cast<char *>(malloc(MSG_SIZE_TCP + 1));
     encode_message_to_chars(message, network_msg.msg);
-
-    // TODO
-    // for (int i = 0; i < MSG_SIZE_TCP + 1; ++i)
-    // {
-    //     std::cout << static_cast<int>(network_msg.msg[i]) << " ";
-    // }
-    // std::cout << std::endl
-    //           << std::endl;
 
     network_send(dest_id, network_msg);
 
@@ -64,17 +49,16 @@ void PerfectLink::receive(int src_id, const Message &network_msg)
 
 void PerfectLink::log_state(std::ofstream &file)
 {
-    /* PL Do not log anything in milestone 2 and 3
-    for (size_t i = 0; i < broadcasted.size(); ++i)
-    {
-        file << "b " << broadcasted[i] << "\n";
-    }
+    // PL Do not log anything in milestone 2 and 3
+    // for (size_t i = 0; i < broadcasted.size(); ++i)
+    // {
+    //     file << "b " << broadcasted[i] << "\n";
+    // }
 
     for (size_t i = 0; i < delivered.size(); ++i)
     {
         file << "d " << delivered[i].first << " " << delivered[i].second << "\n";
     }
-    */
 }
 
 void PerfectLink::deliver(int src_id, const Message &network_msg)

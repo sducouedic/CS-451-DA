@@ -51,11 +51,15 @@ public:
     }
 
 private:
-    const sockaddr_in *addr;     // host address
-    int sockfd;                  // socket file descriptor
-    NetworkUnit *upper_layer;    // network unit to whom to deliver msg
+    const sockaddr_in *addr;  // host address
+    int sockfd;               // socket file descriptor
+    NetworkUnit *upper_layer; // network unit to whom to deliver msg
+    int tcp_seq_nr;           // seq number of tcp packet
+
     std::list<ACK> lacking_acks; // ACKs we are still waiting for
-    int tcp_seq_nr;
+
+    std::list<ACK> main_thread_acks; // solution to avoid mutex (only used by single thread)
+    std::list<ACK> received_acks;    // solution to avoid mutex
 
 private:
     // listen to socket (either for acks or new msg)

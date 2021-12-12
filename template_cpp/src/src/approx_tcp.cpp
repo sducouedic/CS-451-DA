@@ -80,6 +80,9 @@ void ApproxTCP::socket_polling()
         // free the message
         free(message.msg);
     }
+
+    // free memory
+    delete (src_addr);
 }
 
 void ApproxTCP::socket_pushing()
@@ -102,22 +105,22 @@ void ApproxTCP::socket_send(const sockaddr_in *dest, const Message &tcp_msg)
     build_udp_packet(false, tcp_msg, buffer);
 
     // build ACK
-    ACK *ack = new ACK;
-    ack->addr = dest;
-    ack->message.seq_nr = tcp_msg.seq_nr;
-    ack->message.msg = buffer;
+    ACK ack;
+    ack.addr = dest;
+    ack.message.seq_nr = tcp_msg.seq_nr;
+    ack.message.msg = buffer;
 
     // ack already in lacking_acks
     for (auto &a : lacking_acks)
     {
-        if (a.isEqual(*ack))
+        if (a.isEqual(ack))
             return;
     }
 
     sendto(sockfd, buffer, MAXLINE, 0, reinterpret_cast<const sockaddr *>(dest), sizeof(*dest));
 
     // add new ack in lacking_acks
-    lacking_acks.push_back(*ack);
+    lacking_acks.push_back(ack);
 }
 
 void ApproxTCP::socket_receive(const sockaddr_in *src, const Message &tcp_msg)
